@@ -66,8 +66,13 @@ hardcoded. That's expected at this stage.
 3. Firestore > **Rules** tab > paste everything from `firestore.rules` > **Publish**.
 4. Fill the 6 values in `src/firebaseConfig.js`.
 
-## What's NOT done yet (next steps, in order)
+## Step F — Cloudinary (image/audio upload)
 
-1. **Cloudinary** — image/audio upload.
-2. **Block editor** (Tiptap/BlockNote) — replaces the plain textarea.
-3. Mobile 3-level drill-down layout.
+1. Make a free account at https://cloudinary.com (no card needed).
+2. Settings > Upload > **Add upload preset** > Signing mode = **Unsigned**. Save its name.
+3. Fill `cloud name` and `upload preset` in `src/cloudinaryConfig.js`.
+
+## What's NOT done yet
+
+1. Cloudinary account + preset (image/audio insert shows a friendly message until then).
+2. Mobile 3-level drill-down layout.

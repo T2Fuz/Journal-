@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { friendlyError, logIn, signUp } from '../auth.js'
+import ThemeToggle from './ThemeToggle.jsx'
 
-export default function AuthScreen() {
+export default function AuthScreen({ theme, onToggleTheme }) {
   const [mode, setMode] = useState('login') // 'login' | 'signup'
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -26,7 +27,10 @@ export default function AuthScreen() {
 
   return (
     <div className="min-h-screen bg-cream text-ink flex items-center justify-center p-6">
-      <form onSubmit={submit} className="w-full max-w-sm border border-line rounded-xl p-7 bg-white">
+      <div className="fixed top-4 right-4">
+        <ThemeToggle theme={theme} onToggle={onToggleTheme} />
+      </div>
+      <form onSubmit={submit} className="w-full max-w-sm border border-line rounded-xl p-7 bg-surface">
         <h1 className="text-2xl font-bold mb-1">Journal</h1>
         <p className="text-sm text-muted mb-6">
           {isSignup ? 'Notun account banan' : 'Apnar account e login korun'}
@@ -39,7 +43,7 @@ export default function AuthScreen() {
           autoCapitalize="none"
           autoCorrect="off"
           autoComplete="username"
-          className="w-full border border-line rounded-lg px-3 py-2 mb-4 outline-none focus:border-pink-400"
+          className="w-full border border-line bg-cream text-ink rounded-lg px-3 py-2 mb-4 outline-none focus:border-pink-400"
         />
 
         <label className="block text-xs text-muted mb-1">Password</label>
@@ -48,10 +52,10 @@ export default function AuthScreen() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           autoComplete={isSignup ? 'new-password' : 'current-password'}
-          className="w-full border border-line rounded-lg px-3 py-2 mb-4 outline-none focus:border-pink-400"
+          className="w-full border border-line bg-cream text-ink rounded-lg px-3 py-2 mb-4 outline-none focus:border-pink-400"
         />
 
-        {error && <p className="text-sm text-red-700 mb-4">{error}</p>}
+        {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
 
         <button
           type="submit"

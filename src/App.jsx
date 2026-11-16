@@ -18,6 +18,9 @@ import AuthScreen from './components/AuthScreen.jsx'
 import SectionTabs from './components/SectionTabs.jsx'
 import Sidebar from './components/Sidebar.jsx'
 import PageView from './components/PageView.jsx'
+import SyncPill from './components/SyncPill.jsx'
+import ThemeToggle from './components/ThemeToggle.jsx'
+import { useTheme } from './theme.js'
 
 function formatStamp(ms) {
   const d = new Date(ms)
@@ -47,38 +50,63 @@ function ConfigMissing() {
 }
 
 function Root() {
+  const [theme, toggleTheme] = useTheme()
   const [user, setUser] = useState(undefined) // undefined = still checking, null = logged out
   useEffect(() => onAuthStateChanged(auth, (u) => setUser(u)), [])
 
   if (user === undefined) {
     return <div className="min-h-screen bg-cream text-muted p-10">Loading...</div>
   }
-  if (user === null) return <AuthScreen />
-  return <Journal user={user} />
+  if (user === null) return <AuthScreen theme={theme} onToggleTheme={toggleTheme} />
+  return <Journal user={user} theme={theme} onToggleTheme={toggleTheme} />
 }
 
-function Journal({ user }) {
+function Journal({ user, theme, onToggleTheme }) {
   const uid = user.uid
   const [sections, setSections] = useState([])
   const [pages, setPages] = useState([])
   const [activeSection, setActiveSection] = useState(null)
   const [activePage, setActivePage] = useState(null)
   const [dbError, setDbError] = useState('')
+  const [sectionMeta, setSectionMeta] = useState({ total: 0, pending: 0 })
+  const [pageMeta, setPageMeta] = useState({ total: 0, pending: 0 })
+  const [online, setOnline] = useState(navigator.onLine)
+
+  useEffect(() => {
+    const on = () => setOnline(true)
+    const off = () => setOnline(false)
+    window.addEventListener('online', on)
+    window.addEventListener('offline', off)
+    return () => {
+      window.removeEventListener('online', on)
+      window.removeEventListener('offline', off)
+    }
+  }, [])
 
   // Live listeners: whenever data changes on ANY device, these run again.
   useEffect(() => {
     const unsubSections = onSnapshot(
       query(collection(db, 'users', uid, 'sections'), orderBy('order')),
+      { includeMetadataChanges: true }, // also tell me when a write reaches the server
       (snap) => {
         setDbError('')
         setSections(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+        setSectionMeta({
+          total: snap.size,
+          pending: snap.docs.filter((d) => d.metadata.hasPendingWrites).length,
+        })
       },
       (err) => setDbError(err.message),
     )
     const unsubPages = onSnapshot(
       collection(db, 'users', uid, 'pages'),
+      { includeMetadataChanges: true },
       (snap) => {
         setDbError('')
+        setPageMeta({
+          total: snap.size,
+          pending: snap.docs.filter((d) => d.metadata.hasPendingWrites).length,
+        })
         setPages(
           snap.docs.map((d) => {
             const x = d.data({ serverTimestamps: 'estimate' })
@@ -87,6 +115,8 @@ function Journal({ user }) {
               sectionId: x.sectionId,
               title: x.title ?? '',
               content: x.content ?? '',
+              pageColor: x.pageColor ?? 'none',
+              ruleStyle: x.ruleStyle ?? 'none',
               createdMs: x.createdAt ? x.createdAt.toMillis() : Date.now(),
             }
           }),
@@ -156,15 +186,21 @@ function Journal({ user }) {
           onAdd={addSection}
         />
         <div className="ml-auto flex items-center gap-3 text-xs text-muted">
+          <SyncPill
+            total={sectionMeta.total + pageMeta.total}
+            pending={sectionMeta.pending + pageMeta.pending}
+            online={online}
+          />
           <span>{emailToUsername(user.email)}</span>
           <button onClick={logOut} className="underline">
             Logout
           </button>
+          <ThemeToggle theme={theme} onToggle={onToggleTheme} />
         </div>
       </div>
 
       {dbError && (
-        <div className="bg-red-50 text-red-800 text-sm px-6 py-2 border-b border-red-200">
+        <div className="bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200 text-sm px-6 py-2 border-b border-red-300 dark:border-red-900">
           Database e problem: {dbError}
         </div>
       )}

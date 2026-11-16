@@ -1,3 +1,162 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ---------- Light / dark colors ---------- */
+:root {
+  --c-cream: #faf8f5;
+  --c-ink: #2a2622;
+  --c-muted: #8a8278;
+  --c-line: #e7e1d8;
+  --c-surface: #ffffff;
+  --rule-color: rgba(90, 130, 200, 0.38);
+}
+.dark {
+  --c-cream: #171513;
+  --c-ink: #ede8e1;
+  --c-muted: #9a9188;
+  --c-line: #3a352f;
+  --c-surface: #211e1b;
+  --rule-color: rgba(140, 170, 230, 0.3);
+  color-scheme: dark;
+}
+body {
+  background: var(--c-cream);
+  color: var(--c-ink);
+}
+
+/* ---------- Page paper (page color) ---------- */
+.paper {
+  background-color: var(--page-bg-light, #ffffff);
+}
+.dark .paper {
+  background-color: var(--page-bg-dark, #211e1b);
+}
+
+/* ---------- Rule lines & grids (OneNote style) ---------- */
+.rule-lines {
+  background-image: linear-gradient(
+    to bottom,
+    transparent calc(var(--rule) - 1px),
+    var(--rule-color) calc(var(--rule) - 1px)
+  );
+  background-size: 100% var(--rule);
+  background-origin: content-box;
+}
+.rule-grid {
+  background-image: linear-gradient(
+      to bottom,
+      transparent calc(var(--rule) - 1px),
+      var(--rule-color) calc(var(--rule) - 1px)
+    ),
+    linear-gradient(to right, transparent calc(var(--rule) - 1px), var(--rule-color) calc(var(--rule) - 1px));
+  background-size: var(--rule) var(--rule);
+  background-origin: content-box;
+}
+
+/* ---------- Editor content ---------- */
+.journal-editor {
+  min-height: 55vh;
+  outline: none;
+  line-height: var(--rule, 1.7);
+  word-break: break-word;
+}
+.journal-editor p {
+  margin: 0;
+}
+.journal-editor ul,
+.journal-editor ol {
+  margin: 0;
+  padding-left: 1.6em;
+}
+.journal-editor ul {
+  list-style: disc;
+}
+.journal-editor ol {
+  list-style: decimal;
+}
+.journal-editor ul[data-type='taskList'] {
+  list-style: none;
+  padding-left: 0.2em;
+}
+.journal-editor ul[data-type='taskList'] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5em;
+}
+.journal-editor ul[data-type='taskList'] li > label {
+  margin-top: 0.35em;
+  user-select: none;
+}
+.journal-editor ul[data-type='taskList'] li > div {
+  flex: 1;
+}
+.journal-editor ul[data-type='taskList'] li[data-checked='true'] > div {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+.journal-editor mark {
+  color: #1a1a1a;
+  border-radius: 3px;
+  padding: 0 2px;
+}
+.journal-editor img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+  margin: 6px 0;
+}
+.journal-editor img.ProseMirror-selectednode {
+  outline: 2px solid #db2777;
+}
+.journal-editor audio {
+  display: block;
+  width: 100%;
+  max-width: 420px;
+  margin: 6px 0;
+}
+.journal-editor p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--c-muted);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+.journal-editor .tableWrapper {
+  overflow-x: auto;
+}
+.journal-editor table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 100%;
+  margin: 8px 0;
+}
+.journal-editor td,
+.journal-editor th {
+  border: 1px solid var(--c-line);
+  padding: 6px 8px;
+  vertical-align: top;
+  position: relative;
+  min-width: 1em;
+  line-height: 1.5;
+}
+.journal-editor th {
+  background: rgba(128, 128, 128, 0.12);
+  text-align: left;
+}
+.journal-editor .selectedCell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(100, 150, 255, 0.25);
+  pointer-events: none;
+}
+.journal-editor .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: #6ea8fe;
+  pointer-events: none;
+}
