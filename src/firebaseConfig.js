@@ -1,14 +1,8 @@
-// ============================================================
-// EI FILE-TA APNAKE EKBAR EDIT KORTE HOBE.
-// Firebase Console > Project settings > Your apps theke je
-// firebaseConfig dekhen, tar 6 ta value ekhane boshan
-// ("PASTE_..." likha jaygay). Quote ("") gulo rekhe dibenna.
-// ============================================================
 export const firebaseConfig = {
-  apiKey: 'PASTE_API_KEY',
-  authDomain: 'PASTE_AUTH_DOMAIN',
-  projectId: 'PASTE_PROJECT_ID',
-  storageBucket: 'PASTE_STORAGE_BUCKET',
-  messagingSenderId: 'PASTE_MESSAGING_SENDER_ID',
-  appId: 'PASTE_APP_ID',
-}
+  apiKey: "AIzaSyBO6ZICdk16Qd45ea1dBqBykwptQ5OBC5I",
+  authDomain: "journal-cc875.firebaseapp.com",
+  projectId: "journal-cc875",
+  storageBucket: "journal-cc875.firebasestorage.app",
+  messagingSenderId: "627841816864",
+  appId: "1:627841816864:web:0b33e7e58561c60b911f45"
+  }
