@@ -59,13 +59,15 @@ hardcoded. That's expected at this stage.
 3. Vercel auto-detects Vite — just click **Deploy**.
 4. In ~1 minute you'll get a live URL like `journal-app-xyz.vercel.app`.
 
+## Step E — Firebase (done in v0.2)
+
+1. Firebase Console > Authentication > Sign-in method > **Email/Password** = ON.
+2. Firebase Console > Firestore Database > **Create database** (production mode).
+3. Firestore > **Rules** tab > paste everything from `firestore.rules` > **Publish**.
+4. Fill the 6 values in `src/firebaseConfig.js`.
+
 ## What's NOT done yet (next steps, in order)
 
-1. **Firebase** — real accounts (username+password), real Firestore data
-   instead of `sampleData.js`, real-time sync across devices.
-2. **Cloudinary** — image/audio upload.
-3. **Block editor** (Tiptap/BlockNote) — real rich-text editing instead
-   of the plain placeholder text box.
-
-See the master prompt (given separately in chat) for full project
-context if continuing this in a new Claude conversation.
+1. **Cloudinary** — image/audio upload.
+2. **Block editor** (Tiptap/BlockNote) — replaces the plain textarea.
+3. Mobile 3-level drill-down layout.
