@@ -158,6 +158,13 @@ export default function EditorToolbar({ editor, page, onPageSettings }) {
         <Btn title="Strikethrough" active={editor.isActive('strike')} onClick={() => chain().toggleStrike().run()}>
           <s>S</s>
         </Btn>
+        <Btn
+          title="Heading (separate entries within one page)"
+          active={editor.isActive('heading', { level: 2 })}
+          onClick={() => chain().toggleHeading({ level: 2 }).run()}
+        >
+          H
+        </Btn>
         <Sep />
 
         <Menu
@@ -283,6 +290,15 @@ export default function EditorToolbar({ editor, page, onPageSettings }) {
                 }}
               >
                 ▦ Table
+              </button>
+              <button
+                className={itemCls}
+                onClick={() => {
+                  chain().setHorizontalRule().run()
+                  close()
+                }}
+              >
+                ➗ Divider (notun entry)
               </button>
             </div>
           )}

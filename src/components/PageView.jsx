@@ -91,7 +91,7 @@ export default function PageView({ page, dateLabel, onSave, onDelete }) {
 
       <button
         onClick={() => {
-          if (window.confirm('Ei page ta delete korben?')) onDelete(page.id)
+          if (window.confirm('Ei page ta Recycle Bin e pathabo? Pore restore kora jabe.')) onDelete(page.id)
         }}
         className="mt-6 text-xs text-muted underline"
       >

@@ -1,18 +1,77 @@
+import { useEffect, useRef, useState } from 'react'
 import { SECTION_COLORS } from '../colors.js'
 
-export default function SectionTabs({ sections, activeId, onSelect, onAdd }) {
+function SectionMenu({ onRename, onCopy, onDelete }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+  useEffect(() => {
+    if (!open) return
+    const close = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
+    }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [open])
+
   return (
-    <nav className="flex gap-1.5 flex-wrap" aria-label="Sections">
+    <div ref={ref} className="relative" onClick={(e) => e.stopPropagation()}>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        aria-label="Section options"
+        className="px-1.5 h-full text-xs opacity-60 hover:opacity-100"
+      >
+        ▾
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full mt-1 z-30 min-w-[9rem] rounded-lg border border-line bg-surface text-ink shadow-lg p-1">
+          <button
+            className="block w-full text-left px-3 py-1.5 rounded-md text-sm hover:bg-line"
+            onClick={() => {
+              setOpen(false)
+              onRename()
+            }}
+          >
+            Rename
+          </button>
+          <button
+            className="block w-full text-left px-3 py-1.5 rounded-md text-sm hover:bg-line"
+            onClick={() => {
+              setOpen(false)
+              onCopy()
+            }}
+          >
+            Copy
+          </button>
+          <button
+            className="block w-full text-left px-3 py-1.5 rounded-md text-sm hover:bg-line text-red-600"
+            onClick={() => {
+              setOpen(false)
+              onDelete()
+            }}
+          >
+            Delete
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default function SectionTabs({ sections, activeId, onSelect, onAdd, onRename, onCopy, onDelete }) {
+  return (
+    <nav className="flex gap-1.5 flex-wrap items-stretch" aria-label="Sections">
       {sections.map((s) => (
-        <button
+        <div
           key={s.id}
-          onClick={() => onSelect(s.id)}
-          className={`px-4 py-2 rounded-t-lg text-sm font-semibold ${
+          className={`flex items-stretch rounded-t-lg overflow-hidden ${
             SECTION_COLORS[s.color] || SECTION_COLORS.stone
           } ${activeId === s.id ? 'shadow-[inset_0_-3px_0_0_rgba(0,0,0,0.3)]' : ''}`}
         >
-          {s.name}
-        </button>
+          <button onClick={() => onSelect(s.id)} className="px-4 py-2 text-sm font-semibold">
+            {s.name}
+          </button>
+          <SectionMenu onRename={() => onRename(s)} onCopy={() => onCopy(s)} onDelete={() => onDelete(s)} />
+        </div>
       ))}
       <button
         onClick={onAdd}
