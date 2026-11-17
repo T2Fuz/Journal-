@@ -85,6 +85,14 @@ export default function EditorToolbar({ editor, page, onPageSettings }) {
   const audioRef = useRef(null)
 
   const chain = () => editor.chain().focus()
+  // Inserting an image/audio can leave the cursor "selecting" that node
+  // instead of sitting after it — the next insert would then replace it.
+  // Always insert at the very end, then guarantee a fresh paragraph after,
+  // so the cursor always ends up in normal, safe typing position.
+  const insertAtEnd = (fn) => {
+    fn(editor.chain().focus('end')).run()
+    editor.chain().focus('end').insertContent({ type: 'paragraph' }).run()
+  }
   const textStyle = editor.getAttributes('textStyle')
   const currentColor = textStyle.color || ''
   const currentFamily = norm(textStyle.fontFamily)
@@ -97,8 +105,8 @@ export default function EditorToolbar({ editor, page, onPageSettings }) {
     setNotice(resourceType === 'image' ? 'Image upload hocche...' : 'Audio upload hocche...')
     try {
       const url = await uploadToCloudinary(file, resourceType)
-      if (resourceType === 'image') chain().setImage({ src: url }).run()
-      else chain().setAudio(url).run()
+      if (resourceType === 'image') insertAtEnd((c) => c.setImage({ src: url }))
+      else insertAtEnd((c) => c.setAudio(url))
       setNotice('')
     } catch (err) {
       setNotice(err.message)
@@ -359,7 +367,7 @@ export default function EditorToolbar({ editor, page, onPageSettings }) {
         <AudioRecorder
           onClose={() => setRecording(false)}
           onDone={(url) => {
-            chain().setAudio(url).run()
+            insertAtEnd((c) => c.setAudio(url))
             setRecording(false)
           }}
         />
