@@ -62,7 +62,7 @@ export default function PageView({ page, dateLabel, onSave, onDelete }) {
   const ruleVars = rule.size ? { '--rule': `${rule.size}px` } : {}
 
   return (
-    <main className="flex-1 px-6 pb-6 pt-4 md:px-10 md:pb-10 md:pt-5 min-w-0">
+    <main className="flex-1 p-6 md:p-10 min-w-0">
       <input
         ref={titleRef}
         value={title}

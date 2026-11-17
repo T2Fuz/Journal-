@@ -304,7 +304,7 @@ function Journal({ user, theme, onToggleTheme }) {
 
   return (
     <div className="min-h-screen bg-cream text-ink flex flex-col">
-      <div className="flex items-center gap-5 px-6 pt-3 pb-0 border-b border-line">
+      <div className="flex items-center gap-5 px-6 py-4 border-b border-line">
         {editingNotebookName ? (
           <input
             autoFocus

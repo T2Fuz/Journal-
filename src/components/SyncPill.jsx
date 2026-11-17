@@ -4,7 +4,7 @@
 export default function SyncPill({ total, pending, online }) {
   const percent = total === 0 ? 100 : Math.round(((total - pending) / total) * 100)
   const done = percent === 100
-  const label = !online ? 'Offline' : done ? 'Synced' : `Syncing ${percent}%`
+  const label = !online ? 'Offline' : `Syncing ${percent}%`
   const barColor = !online ? 'bg-stone-400' : done ? 'bg-green-500' : 'bg-amber-400'
   const barWidth = !online ? 100 : percent
   const title = !online
