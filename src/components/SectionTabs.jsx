@@ -65,7 +65,7 @@ export default function SectionTabs({ sections, activeId, onSelect, onAdd, onRen
         return (
           <div
             key={s.id}
-            className={`flex items-stretch overflow-hidden rounded-t-xl transition-all ${
+            className={`flex items-stretch rounded-t-xl transition-all ${
               SECTION_COLORS[s.color] || SECTION_COLORS.stone
             } ${active ? 'z-10 -mb-px shadow-[0_-4px_10px_rgba(0,0,0,0.2)]' : 'opacity-75 translate-y-0.5'}`}
           >

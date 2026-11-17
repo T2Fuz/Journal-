@@ -105,6 +105,11 @@ body {
   height: auto;
   border-radius: 6px;
   margin: 6px 0;
+  display: block;
+  /* Native browser resize handle (bottom-right corner), width-only so
+     height always follows automatically — aspect ratio can never distort. */
+  resize: horizontal;
+  overflow: hidden;
 }
 .journal-editor img.ProseMirror-selectednode {
   outline: 2px solid #db2777;
