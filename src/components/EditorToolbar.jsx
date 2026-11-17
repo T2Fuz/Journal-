@@ -8,6 +8,7 @@ import {
   TEXT_COLORS,
 } from '../editorOptions.js'
 import { uploadToCloudinary } from '../cloudinary.js'
+import { insertBlockAtEnd } from '../editorSetup.js'
 import AudioRecorder from './AudioRecorder.jsx'
 
 const norm = (s) => (s || '').replace(/['"]/g, '')
@@ -97,8 +98,8 @@ export default function EditorToolbar({ editor, page, onPageSettings }) {
     setNotice(resourceType === 'image' ? 'Image upload hocche...' : 'Audio upload hocche...')
     try {
       const url = await uploadToCloudinary(file, resourceType)
-      if (resourceType === 'image') chain().setImage({ src: url }).run()
-      else chain().setAudio(url).run()
+      if (resourceType === 'image') insertBlockAtEnd(editor, { type: 'image', attrs: { src: url } })
+      else insertBlockAtEnd(editor, { type: 'audio', attrs: { src: url } })
       setNotice('')
     } catch (err) {
       setNotice(err.message)
@@ -359,7 +360,7 @@ export default function EditorToolbar({ editor, page, onPageSettings }) {
         <AudioRecorder
           onClose={() => setRecording(false)}
           onDone={(url) => {
-            chain().setAudio(url).run()
+            insertBlockAtEnd(editor, { type: 'audio', attrs: { src: url } })
             setRecording(false)
           }}
         />

@@ -100,14 +100,39 @@ body {
   border-radius: 3px;
   padding: 0 2px;
 }
-.journal-editor img {
+.journal-editor .resizable-image {
+  display: inline-block;
+  position: relative;
   max-width: 100%;
-  height: auto;
-  border-radius: 6px;
+  line-height: 0;
   margin: 6px 0;
+  vertical-align: bottom;
 }
-.journal-editor img.ProseMirror-selectednode {
+.journal-editor .resizable-image img {
+  display: block;
+  max-width: 100%;
+  height: auto; /* keeps aspect ratio locked — only width ever changes */
+  border-radius: 6px;
+}
+.journal-editor .resizable-image.ProseMirror-selectednode img {
   outline: 2px solid #db2777;
+}
+.img-resize-handle {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  width: 13px;
+  height: 13px;
+  border-radius: 3px;
+  background: #db2777;
+  border: 2px solid var(--c-surface);
+  cursor: nwse-resize;
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+.journal-editor .resizable-image:hover .img-resize-handle,
+.journal-editor .resizable-image.ProseMirror-selectednode .img-resize-handle {
+  opacity: 1;
 }
 .journal-editor audio {
   display: block;

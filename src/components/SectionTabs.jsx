@@ -59,24 +59,32 @@ function SectionMenu({ onRename, onCopy, onDelete }) {
 
 export default function SectionTabs({ sections, activeId, onSelect, onAdd, onRename, onCopy, onDelete }) {
   return (
-    <nav className="flex gap-1.5 flex-wrap items-stretch" aria-label="Sections">
-      {sections.map((s) => (
-        <div
-          key={s.id}
-          className={`flex items-stretch rounded-t-lg overflow-hidden ${
-            SECTION_COLORS[s.color] || SECTION_COLORS.stone
-          } ${activeId === s.id ? 'shadow-[inset_0_-3px_0_0_rgba(0,0,0,0.3)]' : ''}`}
-        >
-          <button onClick={() => onSelect(s.id)} className="px-4 py-2 text-sm font-semibold">
-            {s.name}
-          </button>
-          <SectionMenu onRename={() => onRename(s)} onCopy={() => onCopy(s)} onDelete={() => onDelete(s)} />
-        </div>
-      ))}
+    <nav className="flex items-end flex-wrap" aria-label="Sections">
+      {sections.map((s, i) => {
+        const isActive = activeId === s.id
+        return (
+          <div
+            key={s.id}
+            style={{ zIndex: isActive ? sections.length + 1 : sections.length - i }}
+            className={`relative flex items-stretch rounded-t-xl overflow-hidden -mr-1.5 transition-all duration-150 ${
+              SECTION_COLORS[s.color] || SECTION_COLORS.stone
+            } ${
+              isActive
+                ? 'shadow-[0_-3px_10px_rgba(0,0,0,0.15)] -translate-y-0.5 opacity-100'
+                : 'opacity-65 hover:opacity-90'
+            }`}
+          >
+            <button onClick={() => onSelect(s.id)} className="px-5 py-2.5 text-sm font-semibold whitespace-nowrap">
+              {s.name}
+            </button>
+            <SectionMenu onRename={() => onRename(s)} onCopy={() => onCopy(s)} onDelete={() => onDelete(s)} />
+          </div>
+        )
+      })}
       <button
         onClick={onAdd}
         aria-label="Add section"
-        className="px-3.5 py-2 rounded-lg border border-dashed border-stone-300 text-stone-400"
+        className="ml-2 mb-0.5 px-3.5 py-2 rounded-lg border border-dashed border-stone-300 text-stone-400 hover:text-stone-600 hover:border-stone-400"
       >
         +
       </button>
