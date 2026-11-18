@@ -12,6 +12,7 @@ import {
   setDoc,
   updateDoc,
   where,
+  writeBatch,
 } from 'firebase/firestore'
 import { auth, configReady, db } from './firebase.js'
 import { emailToUsername, logOut } from './auth.js'
@@ -212,6 +213,15 @@ function Journal({ user, theme, onToggleTheme }) {
     setActiveSection(ref.id)
   }
 
+  // orderedIds: the sections in their new left-to-right order (drag & drop).
+  function reorderSections(orderedIds) {
+    const batch = writeBatch(db)
+    orderedIds.forEach((id, i) => {
+      batch.update(doc(db, 'users', uid, 'sections', id), { order: i })
+    })
+    batch.commit().catch((e) => setDbError(e.message))
+  }
+
   function trashSection(section) {
     if (!window.confirm(`"${section.name}" section ta Recycle Bin e pathabo? Pore restore kora jabe.`))
       return
@@ -335,6 +345,7 @@ function Journal({ user, theme, onToggleTheme }) {
           onRename={renameSection}
           onCopy={copySection}
           onDelete={trashSection}
+          onReorder={reorderSections}
         />
         <div className="ml-auto flex items-center gap-3 text-xs text-muted">
           <SyncPill

@@ -14,12 +14,16 @@ function SectionMenu({ onRename, onCopy, onDelete }) {
   }, [open])
 
   return (
-    <div ref={ref} className="relative" onClick={(e) => e.stopPropagation()}>
-      <button onClick={() => setOpen((o) => !o)} aria-label="Section options" className="px-1 text-xs opacity-60 hover:opacity-100">
+    <div ref={ref} className="relative" onClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        aria-label="Section options"
+        className="px-1.5 py-0.5 text-base leading-none opacity-75 hover:opacity-100"
+      >
         ▾
       </button>
       {open && (
-        <div className="absolute left-0 top-full mt-1 z-50 min-w-[9rem] rounded-lg border border-line bg-surface text-ink shadow-lg p-1">
+        <div className="absolute left-0 top-full mt-1 z-[200] min-w-[9rem] rounded-lg border border-line bg-surface text-ink shadow-lg p-1">
           <button
             className="block w-full text-left px-3 py-1.5 rounded-md text-sm hover:bg-line"
             onClick={() => {
@@ -59,12 +63,13 @@ const TAB_H = 34
 const OVERLAP = 10
 const RESERVED = 76 // room for the "+" button and, if needed, the "⋯" overflow button
 
-function Tab({ s, isActive, onSelect, onRename, onCopy, onDelete, style, innerRef }) {
+function Tab({ s, isActive, zIndex, onSelect, onRename, onCopy, onDelete, dragProps, innerRef }) {
   return (
     <div
       ref={innerRef}
-      style={{ height: TAB_H, ...style }}
+      style={{ height: TAB_H, marginLeft: OVERLAP, zIndex }}
       className={`relative shrink-0 transition-transform duration-150 ${isActive ? '-translate-y-px' : ''}`}
+      {...dragProps}
     >
       <div
         style={{ clipPath: TAB_CLIP }}
@@ -72,7 +77,7 @@ function Tab({ s, isActive, onSelect, onRename, onCopy, onDelete, style, innerRe
           isActive ? 'opacity-100 shadow-[0_-2px_6px_rgba(0,0,0,0.18)]' : 'opacity-60 hover:opacity-85'
         }`}
       />
-      <div className="relative z-10 flex h-full items-center justify-center gap-0.5 px-4">
+      <div className="relative z-10 flex h-full items-center justify-center gap-0.5 px-4 cursor-grab active:cursor-grabbing">
         <button onClick={() => onSelect(s.id)} className="text-sm font-semibold whitespace-nowrap leading-none">
           {s.name}
         </button>
@@ -82,26 +87,40 @@ function Tab({ s, isActive, onSelect, onRename, onCopy, onDelete, style, innerRe
   )
 }
 
-export default function SectionTabs({ sections, activeId, onSelect, onAdd, onRename, onCopy, onDelete }) {
+export default function SectionTabs({ sections, activeId, onSelect, onAdd, onRename, onCopy, onDelete, onReorder }) {
   const containerRef = useRef(null)
   const measureRefs = useRef([])
   const [visibleIds, setVisibleIds] = useState(() => new Set(sections.map((s) => s.id)))
   const [overflowOpen, setOverflowOpen] = useState(false)
   const overflowRef = useRef(null)
 
+  // Local display order — lets dragging feel instant; synced from Firestore
+  // order whenever the section list itself changes (add/delete/rename).
+  const [orderIds, setOrderIds] = useState(() => sections.map((s) => s.id))
+  const dragId = useRef(null)
+  useEffect(() => {
+    setOrderIds((prev) => {
+      const stillHere = prev.filter((id) => sections.some((s) => s.id === id))
+      const extra = sections.map((s) => s.id).filter((id) => !stillHere.includes(id))
+      return [...stillHere, ...extra]
+    })
+  }, [sections.map((s) => s.id).join(',')])
+
+  const ordered = orderIds.map((id) => sections.find((s) => s.id === id)).filter(Boolean)
+
   useLayoutEffect(() => {
     const recalc = () => {
       const containerWidth = containerRef.current?.offsetWidth || 0
-      const activeIdx = sections.findIndex((s) => s.id === activeId)
+      const activeIdx = ordered.findIndex((s) => s.id === activeId)
       const widthOf = (i) => (measureRefs.current[i]?.offsetWidth || 0) + OVERLAP
 
       let used = RESERVED
       const keep = new Set()
       if (activeIdx !== -1) {
         used += widthOf(activeIdx)
-        keep.add(sections[activeIdx].id)
+        keep.add(ordered[activeIdx].id)
       }
-      sections.forEach((s, i) => {
+      ordered.forEach((s, i) => {
         if (i === activeIdx) return
         const w = widthOf(i)
         if (used + w <= containerWidth) {
@@ -115,7 +134,7 @@ export default function SectionTabs({ sections, activeId, onSelect, onAdd, onRen
     const ro = new ResizeObserver(recalc)
     if (containerRef.current) ro.observe(containerRef.current)
     return () => ro.disconnect()
-  }, [sections, activeId])
+  }, [orderIds, activeId, sections])
 
   useEffect(() => {
     if (!overflowOpen) return
@@ -126,14 +145,31 @@ export default function SectionTabs({ sections, activeId, onSelect, onAdd, onRen
     return () => document.removeEventListener('mousedown', close)
   }, [overflowOpen])
 
-  const visible = sections.filter((s) => visibleIds.has(s.id))
-  const hidden = sections.filter((s) => !visibleIds.has(s.id))
+  const visible = ordered.filter((s) => visibleIds.has(s.id))
+  const hidden = ordered.filter((s) => !visibleIds.has(s.id))
+
+  function handleDragOver(targetId) {
+    return (e) => {
+      e.preventDefault()
+      const dragged = dragId.current
+      if (!dragged || dragged === targetId) return
+      setOrderIds((prev) => {
+        const from = prev.indexOf(dragged)
+        const to = prev.indexOf(targetId)
+        if (from === -1 || to === -1) return prev
+        const next = prev.slice()
+        next.splice(from, 1)
+        next.splice(to, 0, dragged)
+        return next
+      })
+    }
+  }
 
   return (
     <div ref={containerRef} className="flex items-end min-w-0 flex-1 overflow-hidden" aria-label="Sections">
       {/* Invisible measuring row — same markup, natural width, never shown. */}
       <div className="absolute -z-10 opacity-0 pointer-events-none flex" aria-hidden="true">
-        {sections.map((s, i) => (
+        {ordered.map((s, i) => (
           <div
             key={s.id}
             ref={(el) => (measureRefs.current[i] = el)}
@@ -141,28 +177,44 @@ export default function SectionTabs({ sections, activeId, onSelect, onAdd, onRen
             style={{ height: TAB_H }}
           >
             {s.name}
-            <span className="px-1 text-xs">▾</span>
+            <span className="px-1.5 text-base">▾</span>
           </div>
         ))}
       </div>
 
       <div className="flex items-end" style={{ marginLeft: -OVERLAP }}>
-        {visible.map((s) => (
+        {visible.map((s, idx) => (
           <Tab
             key={s.id}
             s={s}
             isActive={activeId === s.id}
+            zIndex={activeId === s.id ? 100 : visible.length - idx}
             onSelect={onSelect}
             onRename={() => onRename(s)}
             onCopy={() => onCopy(s)}
             onDelete={() => onDelete(s)}
-            style={{ marginLeft: OVERLAP, zIndex: activeId === s.id ? 50 : 1 }}
+            dragProps={{
+              draggable: true,
+              onDragStart: () => {
+                dragId.current = s.id
+              },
+              onDragOver: handleDragOver(s.id),
+              onDrop: (e) => {
+                e.preventDefault()
+                onReorder?.(orderIds)
+                dragId.current = null
+              },
+              onDragEnd: () => {
+                onReorder?.(orderIds)
+                dragId.current = null
+              },
+            }}
           />
         ))}
       </div>
 
       {hidden.length > 0 && (
-        <div ref={overflowRef} className="relative ml-2 mb-0.5 shrink-0">
+        <div ref={overflowRef} className="relative ml-2 mb-0.5 shrink-0 z-20">
           <button
             onClick={() => setOverflowOpen((o) => !o)}
             aria-label="More sections"
@@ -171,7 +223,7 @@ export default function SectionTabs({ sections, activeId, onSelect, onAdd, onRen
             ⋯
           </button>
           {overflowOpen && (
-            <div className="absolute left-0 top-full mt-1 z-50 min-w-[11rem] rounded-lg border border-line bg-surface text-ink shadow-lg p-1">
+            <div className="absolute left-0 top-full mt-1 z-[200] min-w-[11rem] rounded-lg border border-line bg-surface text-ink shadow-lg p-1">
               {hidden.map((s) => (
                 <button
                   key={s.id}
@@ -193,7 +245,7 @@ export default function SectionTabs({ sections, activeId, onSelect, onAdd, onRen
       <button
         onClick={onAdd}
         aria-label="Add section"
-        className="ml-2 mb-0.5 shrink-0 px-3 py-1.5 rounded-lg border border-dashed border-stone-300 text-stone-400 hover:text-stone-600 hover:border-stone-400"
+        className="ml-2 mb-0.5 shrink-0 px-3 py-1.5 rounded-lg border border-dashed border-stone-300 text-stone-400 hover:text-stone-600 hover:border-stone-400 z-20 relative"
       >
         +
       </button>
