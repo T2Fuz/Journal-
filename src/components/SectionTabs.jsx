@@ -57,6 +57,9 @@ function SectionMenu({ onRename, onCopy, onDelete }) {
   )
 }
 
+// Old-Chrome-style trapezoid: slanted left/right edges via clip-path.
+const TAB_CLIP = 'polygon(16px 0, calc(100% - 16px) 0, 100% 100%, 0 100%)'
+
 export default function SectionTabs({ sections, activeId, onSelect, onAdd, onRename, onCopy, onDelete }) {
   return (
     <nav className="flex items-end flex-wrap" aria-label="Sections">
@@ -65,16 +68,20 @@ export default function SectionTabs({ sections, activeId, onSelect, onAdd, onRen
         return (
           <div
             key={s.id}
-            style={{ zIndex: isActive ? sections.length + 1 : sections.length - i }}
-            className={`relative flex items-stretch rounded-t-xl overflow-hidden -mr-1.5 transition-all duration-150 ${
+            style={{
+              zIndex: isActive ? sections.length + 1 : sections.length - i,
+              clipPath: TAB_CLIP,
+              marginLeft: i === 0 ? 0 : '-14px',
+            }}
+            className={`relative flex items-center transition-all duration-150 ${
               SECTION_COLORS[s.color] || SECTION_COLORS.stone
             } ${
               isActive
-                ? 'shadow-[0_-3px_10px_rgba(0,0,0,0.15)] -translate-y-0.5 opacity-100'
-                : 'opacity-65 hover:opacity-90'
+                ? 'h-11 shadow-[0_-4px_10px_rgba(0,0,0,0.18)] -translate-y-0.5 opacity-100'
+                : 'h-9 self-end opacity-60 hover:opacity-85'
             }`}
           >
-            <button onClick={() => onSelect(s.id)} className="px-5 py-2.5 text-sm font-semibold whitespace-nowrap">
+            <button onClick={() => onSelect(s.id)} className="px-7 text-sm font-semibold whitespace-nowrap">
               {s.name}
             </button>
             <SectionMenu onRename={() => onRename(s)} onCopy={() => onCopy(s)} onDelete={() => onDelete(s)} />
@@ -84,7 +91,7 @@ export default function SectionTabs({ sections, activeId, onSelect, onAdd, onRen
       <button
         onClick={onAdd}
         aria-label="Add section"
-        className="ml-2 mb-0.5 px-3.5 py-2 rounded-lg border border-dashed border-stone-300 text-stone-400 hover:text-stone-600 hover:border-stone-400"
+        className="ml-3 mb-0.5 self-end px-3.5 py-2 rounded-lg border border-dashed border-stone-300 text-stone-400 hover:text-stone-600 hover:border-stone-400"
       >
         +
       </button>
