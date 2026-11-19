@@ -166,7 +166,7 @@ export default function SectionTabs({ sections, activeId, onSelect, onAdd, onRen
   }
 
   return (
-    <div ref={containerRef} className="flex items-end min-w-0 flex-1 overflow-hidden" aria-label="Sections">
+    <div ref={containerRef} className="relative flex items-end min-w-0 flex-1" aria-label="Sections">
       {/* Invisible measuring row — same markup, natural width, never shown. */}
       <div className="absolute -z-10 opacity-0 pointer-events-none flex" aria-hidden="true">
         {ordered.map((s, i) => (
