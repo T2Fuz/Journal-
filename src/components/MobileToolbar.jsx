@@ -85,7 +85,7 @@ const Swatch = ({ color, label, onClick, active }) => (
   />
 )
 
-export default function MobileToolbar({ editor, page, onPageSettings, onDeletePage, keyboard }) {
+export default function MobileToolbar({ editor, page, onPageSettings, onDeletePage, onDismiss, keyboard }) {
   const [, rerender] = useReducer((x) => x + 1, 0)
   useEffect(() => {
     editor.on('transaction', rerender)
@@ -330,6 +330,7 @@ export default function MobileToolbar({ editor, page, onPageSettings, onDeletePa
             onClick={() => {
               setTray(null)
               editor.commands.blur()
+              onDismiss?.()
             }}
             className="mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-l border-line text-muted"
           >

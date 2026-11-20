@@ -97,3 +97,11 @@ export const IconUser = I(
     <path d="M4 21a8 8 0 0116 0" />
   </>,
 )
+export const IconPalette = I(
+  <>
+    <path d="M12 3a9 9 0 100 18c1.4 0 2-.9 2-1.8 0-1.2-1-1.6-1-2.7 0-.9.8-1.5 1.7-1.5H17a4 4 0 004-4c0-4.4-4-8-9-8z" />
+    <path d="M7.5 11h.01M10 7.5h.01M14.5 7.5h.01" />
+  </>,
+)
+export const IconArrowUp = I(<path d="M12 19V5M5 12l7-7 7 7" />)
+export const IconArrowDown = I(<path d="M12 5v14M19 12l-7 7-7-7" />)

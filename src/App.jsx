@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { onAuthStateChanged } from 'firebase/auth'
 import {
   collection,
@@ -67,8 +67,18 @@ function Journal({ user, theme, onToggleTheme }) {
   const uid = user.uid
   const [rawSections, setRawSections] = useState([])
   const [rawPages, setRawPages] = useState([])
-  const [activeSection, setActiveSection] = useState(null)
-  const [activePage, setActivePage] = useState(null)
+  // Remember where I was last (section + page), so the app reopens right there.
+  const lastKey = `journal-last-${uid}`
+  const savedLast = (() => {
+    try {
+      return JSON.parse(localStorage.getItem(lastKey)) || {}
+    } catch {
+      return {}
+    }
+  })()
+  const [activeSection, setActiveSection] = useState(savedLast.section ?? null)
+  const [activePage, setActivePage] = useState(savedLast.page ?? null)
+  const [ready, setReady] = useState(false) // first data has arrived
   const [dbError, setDbError] = useState('')
   const [sectionMeta, setSectionMeta] = useState({ total: 0, pending: 0 })
   const [pageMeta, setPageMeta] = useState({ total: 0, pending: 0 })
@@ -80,9 +90,14 @@ function Journal({ user, theme, onToggleTheme }) {
 
   // Phone layout = 3 screens: all sections -> pages in a section -> editor.
   // We use the browser history so the phone's Back gesture/button works.
-  const [view, setView] = useState('sections')
+  const [view, setView] = useState(savedLast.page ? 'editor' : 'sections')
   useEffect(() => {
     window.history.replaceState({ v: 'sections' }, '')
+    if (savedLast.page) {
+      // so the phone's Back button goes editor -> pages -> sections
+      window.history.pushState({ v: 'pages' }, '')
+      window.history.pushState({ v: 'editor' }, '')
+    }
     const onPop = (e) => setView(e.state?.v || 'sections')
     window.addEventListener('popstate', onPop)
     return () => window.removeEventListener('popstate', onPop)
@@ -122,6 +137,8 @@ function Journal({ user, theme, onToggleTheme }) {
     )
   }
 
+  const got = useRef({ sections: false, pages: false })
+
   // Live listeners: whenever data changes on ANY device, these run again.
   useEffect(() => {
     const unsubSections = onSnapshot(
@@ -130,6 +147,8 @@ function Journal({ user, theme, onToggleTheme }) {
       (snap) => {
         setDbError('')
         setRawSections(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+        got.current.sections = true
+        if (got.current.pages) setReady(true)
         setSectionMeta({
           total: snap.size,
           pending: snap.docs.filter((d) => d.metadata.hasPendingWrites).length,
@@ -146,6 +165,8 @@ function Journal({ user, theme, onToggleTheme }) {
           total: snap.size,
           pending: snap.docs.filter((d) => d.metadata.hasPendingWrites).length,
         })
+        got.current.pages = true
+        if (got.current.sections) setReady(true)
         setRawPages(
           snap.docs.map((d) => {
             const x = d.data({ serverTimestamps: 'estimate' })
@@ -154,6 +175,7 @@ function Journal({ user, theme, onToggleTheme }) {
               sectionId: x.sectionId,
               title: x.title ?? '',
               content: x.content ?? '',
+              blocks: Array.isArray(x.blocks) ? x.blocks : null,
               pageColor: x.pageColor ?? 'none',
               ruleStyle: x.ruleStyle ?? 'none',
               trashed: x.trashed ?? false,
@@ -182,6 +204,17 @@ function Journal({ user, theme, onToggleTheme }) {
     .sort((a, b) => a.createdMs - b.createdMs)
   const currentPage =
     sectionPages.find((p) => p.id === activePage) ?? sectionPages[sectionPages.length - 1]
+
+  // save "where I am" (on the phone: only once I'm actually inside a page)
+  useEffect(() => {
+    if (!ready || !sectionId || !currentPage) return
+    if (mobile && view !== 'editor') return
+    try {
+      localStorage.setItem(lastKey, JSON.stringify({ section: sectionId, page: currentPage.id }))
+    } catch {
+      /* storage full/blocked — not important */
+    }
+  }, [ready, sectionId, currentPage?.id, view, mobile]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---- Sections ----
 
@@ -246,6 +279,7 @@ function Journal({ user, theme, onToggleTheme }) {
           sectionId: ref.id,
           title: p.title,
           content: p.content,
+          ...(p.blocks ? { blocks: p.blocks } : {}),
           pageColor: p.pageColor,
           ruleStyle: p.ruleStyle,
           createdAt: serverTimestamp(),
@@ -325,6 +359,7 @@ function Journal({ user, theme, onToggleTheme }) {
       sectionId: page.sectionId,
       title: page.title ? page.title + ' (copy)' : '',
       content: page.content,
+      ...(page.blocks ? { blocks: page.blocks } : {}),
       pageColor: page.pageColor,
       ruleStyle: page.ruleStyle,
       createdAt: serverTimestamp(),
@@ -357,6 +392,8 @@ function Journal({ user, theme, onToggleTheme }) {
   }
 
   if (mobile) {
+    // wait for the first data, so we don't flash the sections list before jumping to the last page
+    if (!ready) return <div className="min-h-screen bg-cream" />
     const section = sections.find((s) => s.id === sectionId)
     const syncProps = {
       total: sectionMeta.total + pageMeta.total,
