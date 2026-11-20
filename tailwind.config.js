@@ -4,6 +4,9 @@ export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
   theme: {
     extend: {
+      fontFamily: {
+        display: ['Fraunces', '"Noto Sans Bengali"', 'Georgia', 'serif'],
+      },
       // These read CSS variables from index.css, so light/dark switch automatically.
       colors: {
         cream: 'var(--c-cream)',

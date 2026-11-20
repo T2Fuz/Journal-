@@ -25,6 +25,8 @@ import SyncPill from './components/SyncPill.jsx'
 import ThemeToggle from './components/ThemeToggle.jsx'
 import RecycleBin from './components/RecycleBin.jsx'
 import { useTheme } from './theme.js'
+import { useIsMobile } from './useMobile.js'
+import { SectionsScreen, PagesScreen } from './components/MobileScreens.jsx'
 
 function formatStamp(ms) {
   const d = new Date(ms)
@@ -74,6 +76,24 @@ function Journal({ user, theme, onToggleTheme }) {
   const [notebookName, setNotebookName] = useState('Journal')
   const [editingNotebookName, setEditingNotebookName] = useState(false)
   const [showTrash, setShowTrash] = useState(false)
+  const mobile = useIsMobile()
+
+  // Phone layout = 3 screens: all sections -> pages in a section -> editor.
+  // We use the browser history so the phone's Back gesture/button works.
+  const [view, setView] = useState('sections')
+  useEffect(() => {
+    window.history.replaceState({ v: 'sections' }, '')
+    const onPop = (e) => setView(e.state?.v || 'sections')
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [])
+  function go(v) {
+    window.history.pushState({ v }, '')
+    setView(v)
+  }
+  function goBack() {
+    window.history.back()
+  }
 
   useEffect(() => {
     const on = () => setOnline(true)
@@ -179,6 +199,29 @@ function Journal({ user, theme, onToggleTheme }) {
     setActiveSection(ref.id)
   }
 
+  // Phone version of "add section": name + color come from a bottom sheet.
+  function createSection(name, color) {
+    const ref = doc(collection(db, 'users', uid, 'sections'))
+    const maxOrder = rawSections.reduce((m, s) => Math.max(m, s.order ?? 0), -1)
+    setDoc(ref, { name, color, order: maxOrder + 1, createdAt: serverTimestamp() }).catch((e) =>
+      setDbError(e.message),
+    )
+    setActiveSection(ref.id)
+  }
+
+  function updateSection(id, fields) {
+    updateDoc(doc(db, 'users', uid, 'sections', id), fields).catch((e) => setDbError(e.message))
+  }
+
+  function moveSection(section, dir) {
+    const ids = sections.map((s) => s.id)
+    const i = ids.indexOf(section.id)
+    const j = i + dir
+    if (i < 0 || j < 0 || j >= ids.length) return
+    ;[ids[i], ids[j]] = [ids[j], ids[i]]
+    reorderSections(ids)
+  }
+
   function renameSection(section) {
     const name = window.prompt('Notun naam:', section.name)
     if (!name || !name.trim()) return
@@ -224,11 +267,12 @@ function Journal({ user, theme, onToggleTheme }) {
 
   function trashSection(section) {
     if (!window.confirm(`"${section.name}" section ta Recycle Bin e pathabo? Pore restore kora jabe.`))
-      return
+      return false
     updateDoc(doc(db, 'users', uid, 'sections', section.id), {
       trashed: true,
       trashedAt: serverTimestamp(),
     }).catch((e) => setDbError(e.message))
+    return true
   }
 
   function restoreSection(id) {
@@ -310,6 +354,103 @@ function Journal({ user, theme, onToggleTheme }) {
 
   function deletePageForever(id) {
     deleteDoc(doc(db, 'users', uid, 'pages', id)).catch((e) => setDbError(e.message))
+  }
+
+  if (mobile) {
+    const section = sections.find((s) => s.id === sectionId)
+    const syncProps = {
+      total: sectionMeta.total + pageMeta.total,
+      pending: sectionMeta.pending + pageMeta.pending,
+      online,
+    }
+    // if the section/page vanished (deleted on another device) fall back safely
+    const screen = view === 'editor' && currentPage ? 'editor' : view !== 'sections' && section ? 'pages' : 'sections'
+    return (
+      <div className="min-h-screen bg-cream text-ink">
+        {dbError && (
+          <div className="fixed left-3 right-3 top-3 z-[60] rounded-xl bg-red-100 px-4 py-2 text-sm text-red-800 shadow dark:bg-red-950 dark:text-red-200">
+            Database problem: {dbError}
+          </div>
+        )}
+
+        {screen === 'sections' && (
+          <SectionsScreen
+            notebookName={notebookName}
+            onRenameNotebook={renameNotebook}
+            sections={sections}
+            pages={pages}
+            username={emailToUsername(user.email)}
+            theme={theme}
+            onToggleTheme={onToggleTheme}
+            onLogout={logOut}
+            trashCount={trashedSections.length + trashedPages.length}
+            onOpenTrash={() => setShowTrash(true)}
+            syncProps={syncProps}
+            onOpen={(s) => {
+              setActiveSection(s.id)
+              go('pages')
+            }}
+            onCreate={createSection}
+            onUpdate={updateSection}
+            onCopy={copySection}
+            onDelete={trashSection}
+            onMove={moveSection}
+          />
+        )}
+
+        {screen === 'pages' && section && (
+          <PagesScreen
+            section={section}
+            pages={sectionPages}
+            onBack={goBack}
+            onOpen={(p) => {
+              setActivePage(p.id)
+              go('editor')
+            }}
+            onAdd={() => {
+              addPage()
+              go('editor')
+            }}
+            onRename={renamePage}
+            onCopy={copyPage}
+            onDelete={trashPage}
+            onUpdateSection={updateSection}
+            onCopySection={copySection}
+            onDeleteSection={(sec) => {
+              if (trashSection(sec)) goBack()
+            }}
+          />
+        )}
+
+        {screen === 'editor' && currentPage && (
+          <PageView
+            key={currentPage.id}
+            mobile
+            page={currentPage}
+            sectionName={section?.name}
+            dateLabel={formatStamp(currentPage.createdMs)}
+            onSave={savePage}
+            onBack={goBack}
+            onDelete={(id) => {
+              trashPageSilently(id)
+              goBack()
+            }}
+          />
+        )}
+
+        {showTrash && (
+          <RecycleBin
+            trashedSections={trashedSections}
+            trashedPages={trashedPages}
+            onClose={() => setShowTrash(false)}
+            onRestoreSection={restoreSection}
+            onDeleteSectionForever={deleteSectionForever}
+            onRestorePage={restorePage}
+            onDeletePageForever={deletePageForever}
+          />
+        )}
+      </div>
+    )
   }
 
   return (

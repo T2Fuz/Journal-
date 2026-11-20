@@ -194,3 +194,52 @@ body {
   background: #6ea8fe;
   pointer-events: none;
 }
+
+/* ---------- Phone layout extras ---------- */
+html,
+body {
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.fab {
+  box-shadow: 0 8px 20px rgba(122, 21, 56, 0.45), 0 2px 6px rgba(0, 0, 0, 0.25);
+  transition: transform 0.12s ease;
+}
+.fab:active {
+  transform: scale(0.92);
+}
+.card-press {
+  transition: transform 0.1s ease;
+}
+.card-press:active {
+  transform: scale(0.985);
+}
+@keyframes screenIn {
+  from { opacity: 0; transform: translateX(18px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes sheetUp {
+  from { transform: translateY(100%); }
+  to { transform: none; }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes trayUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+.screen-in { animation: screenIn 0.2s ease-out; }
+.sheet-up { animation: sheetUp 0.25s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.fade-in { animation: fadeIn 0.2s ease-out; }
+.tray-up { animation: trayUp 0.15s ease-out; }
+@media (max-width: 767px) {
+  .journal-editor { min-height: 50vh; font-size: 17px; }
+}
