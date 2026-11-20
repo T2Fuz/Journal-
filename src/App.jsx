@@ -83,7 +83,14 @@ function Journal({ user, theme, onToggleTheme }) {
   const [sectionMeta, setSectionMeta] = useState({ total: 0, pending: 0 })
   const [pageMeta, setPageMeta] = useState({ total: 0, pending: 0 })
   const [online, setOnline] = useState(navigator.onLine)
-  const [notebookName, setNotebookName] = useState('Journal')
+  const nameKey = `journal-name-${uid}`
+  const [notebookName, setNotebookName] = useState(() => {
+    try {
+      return localStorage.getItem(nameKey) || 'Journal'
+    } catch {
+      return 'Journal'
+    }
+  })
   const [editingNotebookName, setEditingNotebookName] = useState(false)
   const [showTrash, setShowTrash] = useState(false)
   const mobile = useIsMobile()
@@ -125,13 +132,25 @@ function Journal({ user, theme, onToggleTheme }) {
   // so renaming it on one device updates every other device too.
   useEffect(() => onSnapshot(doc(db, 'users', uid), (snap) => {
     const name = snap.data()?.notebookName
-    if (name) setNotebookName(name)
-  }), [uid])
+    if (name) {
+      setNotebookName(name)
+      try {
+        localStorage.setItem(nameKey, name)
+      } catch {
+        /* ignore */
+      }
+    }
+  }, (err) => setDbError(err.message)), [uid]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function renameNotebook(name) {
     const trimmed = name.trim()
     if (!trimmed || trimmed === notebookName) return
     setNotebookName(trimmed)
+    try {
+      localStorage.setItem(nameKey, trimmed)
+    } catch {
+      /* ignore */
+    }
     setDoc(doc(db, 'users', uid), { notebookName: trimmed }, { merge: true }).catch((e) =>
       setDbError(e.message),
     )

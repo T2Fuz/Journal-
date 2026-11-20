@@ -119,13 +119,15 @@ export default function PageView({ page, dateLabel, onSave, onDelete, mobile, on
   const ruleVars = rule.size ? { '--rule': `${rule.size}px` } : {}
 
   const list = (
-    <div className="columns-1 gap-3 lg:columns-2">
+    <div className="flex-1">
       {blocks.map((b, i) => (
         <BlockCard
           key={b.id}
           block={b}
           index={i}
           total={blocks.length}
+          plain={mobile && blocks.length === 1}
+          minH={blocks.length === 1 ? (mobile ? '58vh' : 'calc(100vh - 25rem)') : mobile ? '9rem' : '8rem'}
           active={active?.id === b.id}
           autoFocus={focusId === b.id}
           ruleClass={ruleClass}
@@ -166,8 +168,16 @@ export default function PageView({ page, dateLabel, onSave, onDelete, mobile, on
   if (mobile) {
     return (
       <div
-        className="screen-in fixed left-0 right-0 z-10 flex flex-col bg-cream text-ink"
-        style={{ top: vv.offsetTop, height: vv.height, paddingTop: 'env(safe-area-inset-top, 0px)' }}
+        className={`screen-in fixed left-0 right-0 z-10 flex flex-col text-ink ${
+          page.pageColor && page.pageColor !== 'none' ? 'paper' : 'bg-cream'
+        }`}
+        style={{
+          top: vv.offsetTop,
+          height: vv.height,
+          paddingTop: 'env(safe-area-inset-top, 0px)',
+          '--page-bg-light': color.light,
+          '--page-bg-dark': color.dark,
+        }}
       >
         <div className="flex shrink-0 items-center justify-between px-2 py-1">
           <button onClick={onBack} className="flex items-center gap-0.5 rounded-full px-2 py-2 text-sm text-muted active:bg-line">
@@ -194,12 +204,7 @@ export default function PageView({ page, dateLabel, onSave, onDelete, mobile, on
               className="font-display w-full bg-transparent text-3xl font-bold outline-none"
             />
             <p className="mb-3 mt-1 text-xs text-muted">{dateLabel}</p>
-            <div
-              className="paper rounded-2xl border border-line p-3 pb-1"
-              style={{ '--page-bg-light': color.light, '--page-bg-dark': color.dark }}
-            >
-              {list}
-            </div>
+            {list}
           </div>
           <button
             onClick={addBlock}
@@ -276,7 +281,7 @@ export default function PageView({ page, dateLabel, onSave, onDelete, mobile, on
     null
 
   return (
-    <main className="min-w-0 flex-1 px-6 pb-24 pt-3 md:px-10 md:pb-28 md:pt-4">
+    <main className="min-w-0 flex-1 px-6 pb-20 pt-3 md:px-10 md:pt-4">
       <input
         ref={titleRef}
         value={title}
@@ -296,24 +301,24 @@ export default function PageView({ page, dateLabel, onSave, onDelete, mobile, on
       )}
 
       <div
-        className="paper rounded-lg border border-line p-4 pb-1"
+        className={`flex min-h-[calc(100vh-21rem)] flex-col ${
+          page.pageColor && page.pageColor !== 'none' ? 'paper rounded-lg p-3' : ''
+        }`}
         style={{ '--page-bg-light': color.light, '--page-bg-dark': color.dark }}
       >
         {list}
+        {/* "+" sits in the bottom-right corner of the page area and follows you while scrolling */}
+        <div className="sticky bottom-6 z-20 flex h-0 justify-end">
+          <button
+            onClick={addBlock}
+            aria-label="Add block"
+            title="New block"
+            className="fab absolute bottom-0 right-2 flex h-14 w-14 items-center justify-center rounded-full bg-pink-800 text-white"
+          >
+            <IconPlus size={26} />
+          </button>
+        </div>
       </div>
-
-      <button
-        onClick={addBlock}
-        aria-label="Add block"
-        title="New block"
-        className="fab fixed bottom-8 right-8 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-pink-800 text-white"
-      >
-        <IconPlus size={26} />
-      </button>
-
-      <button onClick={askDeletePage} className="mt-6 text-xs text-muted underline">
-        Delete this page
-      </button>
       {proxy}
     </main>
   )

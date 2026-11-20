@@ -76,7 +76,7 @@ export function SectionsScreen({
             aria-label="Account"
             className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-pink-800 text-base font-bold uppercase text-white"
           >
-            {(username || '?')[0]}
+            {(username || '').replace(/[^a-zA-Z0-9]/g, '')[0] || '?'}
           </button>
         </div>
         <div className="mt-3 flex items-center gap-2 text-xs text-muted">

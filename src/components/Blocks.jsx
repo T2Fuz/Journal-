@@ -42,6 +42,8 @@ export function BlockCard({
   autoFocus,
   index,
   total,
+  plain,
+  minH,
   ruleClass,
   ruleVars,
   onChange,
@@ -98,10 +100,14 @@ export function BlockCard({
   return (
     <div
       ref={cardRef}
-      className={`block-card mb-3 break-inside-avoid rounded-2xl border px-4 pt-3 pb-2 shadow-sm ${
-        active ? 'border-pink-600 ring-1 ring-pink-600/40' : 'border-line'
-      }`}
-      style={{ '--blk-light': color.light, '--blk-dark': color.dark }}
+      className={
+        plain
+          ? 'plain-block mb-3 break-inside-avoid px-0.5 pt-1 pb-2' // single block = plain writing area, like Keep
+          : `block-card mb-3 break-inside-avoid rounded-2xl border px-4 pt-3 pb-2 shadow-sm ${
+              active ? 'border-pink-600 ring-1 ring-pink-600/40' : 'border-line'
+            }`
+      }
+      style={{ '--blk-light': color.light, '--blk-dark': color.dark, '--blk-min': minH }}
     >
       <div className={ruleClass} style={ruleVars}>
         <EditorContent editor={editor} />

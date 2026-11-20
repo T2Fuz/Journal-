@@ -251,6 +251,7 @@ body {
 .dark .block-card {
   background-color: var(--blk-dark, #211e1b);
 }
-.block-card .journal-editor {
-  min-height: 3.2rem;
+.block-card .journal-editor,
+.plain-block .journal-editor {
+  min-height: var(--blk-min, 3.2rem);
 }

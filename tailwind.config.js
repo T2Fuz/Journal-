@@ -5,7 +5,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        display: ['Fraunces', '"Noto Sans Bengali"', 'Georgia', 'serif'],
+        display: ['ui-sans-serif', 'system-ui', '-apple-system', '"Segoe UI"', '"Noto Sans Bengali"', 'Roboto', 'sans-serif'],
       },
       // These read CSS variables from index.css, so light/dark switch automatically.
       colors: {
