@@ -10,6 +10,7 @@ import {
 import { uploadToCloudinary } from '../cloudinary.js'
 import { insertBlockAtEnd } from '../editorSetup.js'
 import AudioRecorder from './AudioRecorder.jsx'
+import DrawModal from './DrawModal.jsx'
 import {
   IconBullet,
   IconCheck,
@@ -20,6 +21,7 @@ import {
   IconMusic,
   IconNumber,
   IconPage,
+  IconPen,
   IconPlus,
   IconRedo,
   IconTable,
@@ -95,6 +97,7 @@ export default function MobileToolbar({ editor, page, onPageSettings, onDeletePa
   const [tray, setTray] = useState(null)
   const [notice, setNotice] = useState('')
   const [recording, setRecording] = useState(false)
+  const [drawing, setDrawing] = useState(false)
   const imageRef = useRef(null)
   const audioRef = useRef(null)
 
@@ -105,6 +108,12 @@ export default function MobileToolbar({ editor, page, onPageSettings, onDeletePa
   const curFamily = norm(ts.fontFamily)
   const curSize = ts.fontSize || ''
   const inTable = editor.isActive('table')
+
+  async function saveDrawing(blob) {
+    const file = new File([blob], 'drawing.png', { type: 'image/png' })
+    const url = await uploadToCloudinary(file, 'image')
+    insertBlockAtEnd(editor, { type: 'image', attrs: { src: url } })
+  }
 
   async function pickFile(e, resourceType) {
     const file = e.target.files?.[0]
@@ -205,6 +214,7 @@ export default function MobileToolbar({ editor, page, onPageSettings, onDeletePa
             <>
               <Row>
                 {tile(<IconImage size={24} />, 'Image', () => imageRef.current?.click())}
+                {tile(<IconPen size={24} />, 'Draw', () => setDrawing(true))}
                 {tile(<IconMic size={24} />, 'Record', () => setRecording(true))}
                 {tile(<IconMusic size={24} />, 'Audio', () => audioRef.current?.click())}
                 {tile(<IconTable size={24} />, 'Table', () =>
@@ -341,6 +351,7 @@ export default function MobileToolbar({ editor, page, onPageSettings, onDeletePa
 
       <input ref={imageRef} type="file" accept="image/*" className="hidden" onChange={(e) => pickFile(e, 'image')} />
       <input ref={audioRef} type="file" accept="audio/*" className="hidden" onChange={(e) => pickFile(e, 'video')} />
+      {drawing && <DrawModal onSave={saveDrawing} onClose={() => setDrawing(false)} />}
       {recording && (
         <AudioRecorder
           onClose={() => setRecording(false)}

@@ -10,6 +10,7 @@ import {
 import { uploadToCloudinary } from '../cloudinary.js'
 import { insertBlockAtEnd } from '../editorSetup.js'
 import AudioRecorder from './AudioRecorder.jsx'
+import DrawModal from './DrawModal.jsx'
 
 const norm = (s) => (s || '').replace(/['"]/g, '')
 
@@ -82,6 +83,7 @@ export default function EditorToolbar({ editor, page, onPageSettings }) {
 
   const [notice, setNotice] = useState('')
   const [recording, setRecording] = useState(false)
+  const [drawing, setDrawing] = useState(false)
   const imageRef = useRef(null)
   const audioRef = useRef(null)
 
@@ -90,6 +92,12 @@ export default function EditorToolbar({ editor, page, onPageSettings }) {
   const currentColor = textStyle.color || ''
   const currentFamily = norm(textStyle.fontFamily)
   const currentSize = textStyle.fontSize || ''
+
+  async function saveDrawing(blob) {
+    const file = new File([blob], 'drawing.png', { type: 'image/png' })
+    const url = await uploadToCloudinary(file, 'image')
+    insertBlockAtEnd(editor, { type: 'image', attrs: { src: url } })
+  }
 
   async function pickFile(e, resourceType) {
     const file = e.target.files?.[0]
@@ -269,6 +277,15 @@ export default function EditorToolbar({ editor, page, onPageSettings }) {
                 className={itemCls}
                 onClick={() => {
                   close()
+                  setDrawing(true)
+                }}
+              >
+                ✏️ Drawing
+              </button>
+              <button
+                className={itemCls}
+                onClick={() => {
+                  close()
                   setRecording(true)
                 }}
               >
@@ -355,6 +372,8 @@ export default function EditorToolbar({ editor, page, onPageSettings }) {
 
       <input ref={imageRef} type="file" accept="image/*" className="hidden" onChange={(e) => pickFile(e, 'image')} />
       <input ref={audioRef} type="file" accept="audio/*" className="hidden" onChange={(e) => pickFile(e, 'video')} />
+
+      {drawing && <DrawModal onSave={saveDrawing} onClose={() => setDrawing(false)} />}
 
       {recording && (
         <AudioRecorder

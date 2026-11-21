@@ -112,3 +112,4 @@ export const IconSearch = I(
   </>,
 )
 export const IconSort = I(<path d="M3 6h13M3 12h9M3 18h5M17 8v12M17 20l-3-3M17 20l3-3" />)
+export const IconPen = I(<path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z" />)
