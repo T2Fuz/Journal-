@@ -9,6 +9,7 @@ import {
   IconChevron,
   IconLogout,
   IconMore,
+  IconPage,
   IconTrash,
 } from './Icons.jsx'
 
@@ -31,6 +32,7 @@ export function SectionsScreen({
   onLogout,
   trashCount,
   onOpenTrash,
+  onOpenImport,
   syncProps,
   onOpen,
   onCreate,
@@ -194,6 +196,16 @@ export function SectionsScreen({
             >
               <IconTrash />
               Recycle Bin{trashCount ? ` (${trashCount})` : ''}
+            </button>
+            <button
+              onClick={() => {
+                setSheet(null)
+                onOpenImport()
+              }}
+              className="flex items-center gap-3 rounded-xl px-3 py-3.5 text-left text-base active:bg-line"
+            >
+              <IconPage />
+              Import from OneNote
             </button>
             <button
               onClick={onLogout}

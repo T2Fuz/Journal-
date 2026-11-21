@@ -23,6 +23,7 @@ import Sidebar from './components/Sidebar.jsx'
 import PageView from './components/PageView.jsx'
 import SyncPill from './components/SyncPill.jsx'
 import ThemeToggle from './components/ThemeToggle.jsx'
+import ImportModal from './components/ImportModal.jsx'
 import RecycleBin from './components/RecycleBin.jsx'
 import { useTheme } from './theme.js'
 import { useIsMobile } from './useMobile.js'
@@ -93,6 +94,7 @@ function Journal({ user, theme, onToggleTheme }) {
   })
   const [editingNotebookName, setEditingNotebookName] = useState(false)
   const [showTrash, setShowTrash] = useState(false)
+  const [showImport, setShowImport] = useState(false)
   const mobile = useIsMobile()
 
   // Phone layout = 3 screens: all sections -> pages in a section -> editor.
@@ -441,6 +443,7 @@ function Journal({ user, theme, onToggleTheme }) {
             onLogout={logOut}
             trashCount={trashedSections.length + trashedPages.length}
             onOpenTrash={() => setShowTrash(true)}
+            onOpenImport={() => setShowImport(true)}
             syncProps={syncProps}
             onOpen={(s) => {
               setActiveSection(s.id)
@@ -494,6 +497,7 @@ function Journal({ user, theme, onToggleTheme }) {
           />
         )}
 
+        {showImport && <ImportModal uid={uid} sections={sections} onClose={() => setShowImport(false)} />}
         {showTrash && (
           <RecycleBin
             trashedSections={trashedSections}
@@ -551,6 +555,9 @@ function Journal({ user, theme, onToggleTheme }) {
             online={online}
           />
           <span>{emailToUsername(user.email)}</span>
+          <button onClick={() => setShowImport(true)} className="underline">
+            Import
+          </button>
           <button onClick={logOut} className="underline">
             Logout
           </button>
@@ -593,6 +600,7 @@ function Journal({ user, theme, onToggleTheme }) {
         />
       </div>
 
+      {showImport && <ImportModal uid={uid} sections={sections} onClose={() => setShowImport(false)} />}
       {showTrash && (
         <RecycleBin
           trashedSections={trashedSections}
