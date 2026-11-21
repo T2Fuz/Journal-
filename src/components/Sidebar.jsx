@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { deriveTitle } from '../titleUtils.js'
+import { SortButton } from './SortSearch.jsx'
 
 function ItemMenu({ onRename, onCopy, onDelete }) {
   const [open, setOpen] = useState(false)
@@ -67,15 +68,20 @@ export default function Sidebar({
   onDelete,
   trashCount,
   onOpenTrash,
+  sortMode,
+  onSortChange,
 }) {
   return (
     <aside className="w-64 shrink-0 border-l border-line p-4 flex flex-col">
-      <button
-        onClick={onAdd}
-        className="w-full bg-pink-800 text-white rounded-lg py-2.5 text-sm font-semibold mb-4 hover:bg-pink-700"
-      >
-        + Add Page
-      </button>
+      <div className="mb-4 flex gap-2">
+        <button
+          onClick={onAdd}
+          className="min-w-0 flex-1 bg-pink-800 text-white rounded-lg py-2.5 text-sm font-semibold hover:bg-pink-700"
+        >
+          + Add Page
+        </button>
+        <SortButton mode={sortMode} onChange={onSortChange} />
+      </div>
       <ul className="space-y-1 flex-1 overflow-y-auto">
         {pages.map((p) => (
           <li key={p.id} className="flex items-center gap-1">

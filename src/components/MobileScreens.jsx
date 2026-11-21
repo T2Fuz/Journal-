@@ -3,6 +3,7 @@ import { SECTION_COLORS } from '../colors.js'
 import { deriveTitle, stripHtml } from '../titleUtils.js'
 import { ActionSheet, BottomSheet, Fab, SectionSheet } from './MobileUI.jsx'
 import SyncPill from './SyncPill.jsx'
+import { SORT_OPTIONS } from './SortSearch.jsx'
 import {
   IconBack,
   IconBook,
@@ -10,6 +11,8 @@ import {
   IconLogout,
   IconMore,
   IconPage,
+  IconSearch,
+  IconSort,
   IconTrash,
 } from './Icons.jsx'
 
@@ -33,6 +36,7 @@ export function SectionsScreen({
   trashCount,
   onOpenTrash,
   onOpenImport,
+  onSearch,
   syncProps,
   onOpen,
   onCreate,
@@ -73,13 +77,22 @@ export function SectionsScreen({
               </button>
             )}
           </div>
+          <div className="mt-1 flex shrink-0 items-center gap-2">
+          <button
+            onClick={onSearch}
+            aria-label="Search"
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-line text-muted active:bg-line"
+          >
+            <IconSearch size={19} />
+          </button>
           <button
             onClick={() => setSheet({ type: 'account' })}
             aria-label="Account"
-            className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-pink-800 text-base font-bold uppercase text-white"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-pink-800 text-base font-bold uppercase text-white"
           >
             {(username || '').replace(/[^a-zA-Z0-9]/g, '')[0] || '?'}
           </button>
+          </div>
         </div>
         <div className="mt-3 flex items-center gap-2 text-xs text-muted">
           <span>
@@ -222,10 +235,11 @@ export function SectionsScreen({
 }
 
 // ───────────── Screen 2: pages inside one section ─────────────
-export function PagesScreen({ section, pages, onBack, onOpen, onAdd, onRename, onCopy, onDelete, onUpdateSection, onCopySection, onDeleteSection }) {
+export function PagesScreen({ section, pages, sortMode, onSortChange, onSearch, onBack, onOpen, onAdd, onRename, onCopy, onDelete, onUpdateSection, onCopySection, onDeleteSection }) {
   const [menuPage, setMenuPage] = useState(null)
   const [secMenu, setSecMenu] = useState(false)
   const [secEdit, setSecEdit] = useState(false)
+  const [sortSheet, setSortSheet] = useState(false)
   const color = SECTION_COLORS[section.color] || SECTION_COLORS.stone
 
   return (
@@ -239,13 +253,21 @@ export function PagesScreen({ section, pages, onBack, onOpen, onAdd, onRename, o
             <IconBack size={20} />
             All sections
           </button>
-          <button
-            onClick={() => setSecMenu(true)}
-            aria-label="Section options"
-            className="flex h-10 w-10 items-center justify-center rounded-full text-muted active:bg-line"
-          >
-            <IconMore size={20} />
-          </button>
+          <div className="flex items-center">
+            <button onClick={onSearch} aria-label="Search" className="flex h-10 w-10 items-center justify-center rounded-full text-muted active:bg-line">
+              <IconSearch size={20} />
+            </button>
+            <button onClick={() => setSortSheet(true)} aria-label="Sort pages" className="flex h-10 w-10 items-center justify-center rounded-full text-muted active:bg-line">
+              <IconSort size={20} />
+            </button>
+            <button
+              onClick={() => setSecMenu(true)}
+              aria-label="Section options"
+              className="flex h-10 w-10 items-center justify-center rounded-full text-muted active:bg-line"
+            >
+              <IconMore size={20} />
+            </button>
+          </div>
         </div>
         <div className="mt-1 flex items-center gap-3 px-2">
           <span className={`h-9 w-2.5 shrink-0 rounded-full ${color}`} />
@@ -305,6 +327,16 @@ export function PagesScreen({ section, pages, onBack, onOpen, onAdd, onRename, o
             { label: 'Copy', onClick: () => onCopy(menuPage) },
             { label: 'Delete', danger: true, onClick: () => onDelete(menuPage) },
           ]}
+        />
+      )}
+      {sortSheet && (
+        <ActionSheet
+          title="Sort pages by"
+          onClose={() => setSortSheet(false)}
+          actions={SORT_OPTIONS.map((o) => ({
+            label: `${sortMode === o.key ? '✓  ' : '     '}${o.label}`,
+            onClick: () => onSortChange(o.key),
+          }))}
         />
       )}
       {secMenu && (

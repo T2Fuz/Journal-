@@ -24,6 +24,7 @@ import PageView from './components/PageView.jsx'
 import SyncPill from './components/SyncPill.jsx'
 import ThemeToggle from './components/ThemeToggle.jsx'
 import ImportModal from './components/ImportModal.jsx'
+import { SearchButton, SearchModal, sortPages } from './components/SortSearch.jsx'
 import RecycleBin from './components/RecycleBin.jsx'
 import { useTheme } from './theme.js'
 import { useIsMobile } from './useMobile.js'
@@ -95,6 +96,27 @@ function Journal({ user, theme, onToggleTheme }) {
   const [editingNotebookName, setEditingNotebookName] = useState(false)
   const [showTrash, setShowTrash] = useState(false)
   const [showImport, setShowImport] = useState(false)
+  const [showSearch, setShowSearch] = useState(false)
+  const [sortMode, setSortModeState] = useState(() => localStorage.getItem('journal-sort') || 'created-asc')
+  const setSortMode = (m) => {
+    setSortModeState(m)
+    try {
+      localStorage.setItem('journal-sort', m)
+    } catch {
+      /* ignore */
+    }
+  }
+  // Ctrl+K (or Cmd+K) opens search
+  useEffect(() => {
+    const on = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setShowSearch(true)
+      }
+    }
+    window.addEventListener('keydown', on)
+    return () => window.removeEventListener('keydown', on)
+  }, [])
   const mobile = useIsMobile()
 
   // Phone layout = 3 screens: all sections -> pages in a section -> editor.
@@ -201,6 +223,7 @@ function Journal({ user, theme, onToggleTheme }) {
               ruleStyle: x.ruleStyle ?? 'none',
               trashed: x.trashed ?? false,
               createdMs: x.createdAt ? x.createdAt.toMillis() : Date.now(),
+              updatedMs: x.updatedAt?.toMillis ? x.updatedAt.toMillis() : null,
             }
           }),
         )
@@ -220,11 +243,19 @@ function Journal({ user, theme, onToggleTheme }) {
   const trashedPages = rawPages.filter((p) => p.trashed)
 
   const sectionId = sections.find((s) => s.id === activeSection)?.id ?? sections[0]?.id
-  const sectionPages = pages
+  // oldest->newest order decides the default page; the list on screen follows the sort option
+  const sectionPagesBase = pages
     .filter((p) => p.sectionId === sectionId)
     .sort((a, b) => a.createdMs - b.createdMs)
+  const sectionPages = sortPages(sectionPagesBase, sortMode)
   const currentPage =
-    sectionPages.find((p) => p.id === activePage) ?? sectionPages[sectionPages.length - 1]
+    sectionPagesBase.find((p) => p.id === activePage) ?? sectionPagesBase[sectionPagesBase.length - 1]
+
+  function openFromSearch(p) {
+    setActiveSection(p.sectionId)
+    setActivePage(p.id)
+    if (mobile) go('editor')
+  }
 
   // save "where I am" (on the phone: only once I'm actually inside a page)
   useEffect(() => {
@@ -444,6 +475,7 @@ function Journal({ user, theme, onToggleTheme }) {
             trashCount={trashedSections.length + trashedPages.length}
             onOpenTrash={() => setShowTrash(true)}
             onOpenImport={() => setShowImport(true)}
+            onSearch={() => setShowSearch(true)}
             syncProps={syncProps}
             onOpen={(s) => {
               setActiveSection(s.id)
@@ -462,6 +494,9 @@ function Journal({ user, theme, onToggleTheme }) {
             section={section}
             pages={sectionPages}
             onBack={goBack}
+            onSearch={() => setShowSearch(true)}
+            sortMode={sortMode}
+            onSortChange={setSortMode}
             onOpen={(p) => {
               setActivePage(p.id)
               go('editor')
@@ -497,6 +532,7 @@ function Journal({ user, theme, onToggleTheme }) {
           />
         )}
 
+        {showSearch && <SearchModal pages={pages} sections={sections} onOpen={openFromSearch} onClose={() => setShowSearch(false)} />}
         {showImport && <ImportModal uid={uid} sections={sections} onClose={() => setShowImport(false)} />}
         {showTrash && (
           <RecycleBin
@@ -562,6 +598,7 @@ function Journal({ user, theme, onToggleTheme }) {
             Logout
           </button>
           <ThemeToggle theme={theme} onToggle={onToggleTheme} />
+          <SearchButton onClick={() => setShowSearch(true)} />
         </div>
       </div>
 
@@ -589,6 +626,8 @@ function Journal({ user, theme, onToggleTheme }) {
         )}
         <Sidebar
           pages={sectionPages}
+          sortMode={sortMode}
+          onSortChange={setSortMode}
           activeId={currentPage?.id}
           onSelect={setActivePage}
           onAdd={addPage}
@@ -600,6 +639,7 @@ function Journal({ user, theme, onToggleTheme }) {
         />
       </div>
 
+      {showSearch && <SearchModal pages={pages} sections={sections} onOpen={openFromSearch} onClose={() => setShowSearch(false)} />}
       {showImport && <ImportModal uid={uid} sections={sections} onClose={() => setShowImport(false)} />}
       {showTrash && (
         <RecycleBin

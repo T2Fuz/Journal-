@@ -105,3 +105,10 @@ export const IconPalette = I(
 )
 export const IconArrowUp = I(<path d="M12 19V5M5 12l7-7 7 7" />)
 export const IconArrowDown = I(<path d="M12 5v14M19 12l-7 7-7-7" />)
+export const IconSearch = I(
+  <>
+    <circle cx="11" cy="11" r="7" />
+    <path d="M21 21l-4.3-4.3" />
+  </>,
+)
+export const IconSort = I(<path d="M3 6h13M3 12h9M3 18h5M17 8v12M17 20l-3-3M17 20l3-3" />)

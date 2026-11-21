@@ -21,61 +21,102 @@ function parseStamp(dateText, timeText) {
   return Number.isNaN(d) ? null : d
 }
 
-// Does a OneNote page start at element i?  (short title line, then date line, maybe time line)
-function startsPage(els, i) {
-  const t = text(els[i])
-  if (!t || t.length > 150 || els[i].querySelector('img,table')) return false
-  const a = els[i + 1] && text(els[i + 1])
-  return !!a && isDateLine(a)
+const isBreak = (e) => !!(e.matches?.('hr.pb') || e.querySelector?.('hr.pb'))
+const isHeading = (e) => /^H[1-6]$/.test(e.tagName)
+
+// A OneNote entry starts with a DATE line followed by a TIME line
+// (and, if the page has a title, the title sits right above the date).
+function pageStarts(els) {
+  const starts = []
+  const nextNonEmpty = (i) => {
+    for (let k = i + 1; k < els.length && k <= i + 3; k++) if (!isEmpty(els[k])) return k
+    return -1
+  }
+  els.forEach((e, i) => {
+    if (!isDateLine(text(e))) return
+    const n = nextNonEmpty(i)
+    if (n < 0 || !isTimeLine(text(els[n]))) return
+    let at = i
+    let titled = false
+    const prev = els[i - 1]
+    if (
+      prev &&
+      !isEmpty(prev) &&
+      text(prev).length <= 150 &&
+      !prev.querySelector('img,table') &&
+      !isDateLine(text(prev)) &&
+      !isTimeLine(text(prev))
+    ) {
+      const before = els[i - 2]
+      const boldOnly =
+        prev.children.length === 1 && prev.firstElementChild.tagName === 'STRONG' && text(prev.firstElementChild) === text(prev)
+      if (isHeading(prev) || boldOnly || !before || isEmpty(before) || isBreak(before)) {
+        at = i - 1
+        titled = true
+      }
+    }
+    starts.push({ at, titled })
+  })
+  return starts
 }
 
 function splitHtml(html, mode) {
   const body = new DOMParser().parseFromString(`<body>${html}</body>`, 'text/html').body
-  let els = [...body.children]
-  const hasBreaks = els.some((e) => e.matches?.('hr.pb') || e.querySelector?.('hr.pb'))
-  const hasSig = els.some((_, i) => startsPage(els, i))
+  const els = [...body.children]
+  const starts = pageStarts(els)
+  const hasBreaks = els.some(isBreak)
   const hasHeads = els.some((e) => /^H[1-2]$/.test(e.tagName))
   const use =
-    mode !== 'auto' ? mode : hasSig ? 'signature' : hasBreaks ? 'breaks' : hasHeads ? 'headings' : 'file'
+    mode !== 'auto' ? mode : starts.length ? 'signature' : hasBreaks ? 'breaks' : hasHeads ? 'headings' : 'file'
 
   let groups = []
-  if (use === 'file') groups = [els]
-  else {
+  if (use === 'signature') {
+    if (starts.length && els.slice(0, starts[0].at).some((e) => !isEmpty(e))) {
+      groups.push({ els: els.slice(0, starts[0].at), titled: false })
+    }
+    starts.forEach((st, k) => {
+      const end = starts[k + 1] ? starts[k + 1].at : els.length
+      groups.push({ els: els.slice(st.at, end).filter((e) => !isBreak(e)), titled: st.titled })
+    })
+    if (!starts.length) groups.push({ els: els.filter((e) => !isBreak(e)), titled: false })
+  } else if (use === 'file') {
+    groups = [{ els, titled: true }]
+  } else {
     let cur = []
-    els.forEach((e, i) => {
-      const brk = e.matches?.('hr.pb') || !!e.querySelector?.('hr.pb')
-      const cut =
-        (use === 'breaks' && brk) ||
-        (use === 'headings' && /^H[1-2]$/.test(e.tagName) && cur.length) ||
-        (use === 'signature' && startsPage(els, i) && cur.length)
+    els.forEach((e) => {
+      const cut = (use === 'breaks' && isBreak(e)) || (use === 'headings' && /^H[1-2]$/.test(e.tagName) && cur.length)
       if (cut) {
-        groups.push(cur)
+        groups.push({ els: cur, titled: true })
         cur = []
       }
-      if (!(e.matches?.('hr.pb') || e.querySelector?.('hr.pb'))) cur.push(e)
+      if (!isBreak(e)) cur.push(e)
     })
-    groups.push(cur)
+    groups.push({ els: cur, titled: true })
   }
-  return { groups: groups.filter((g) => g.some((e) => !isEmpty(e))), used: use }
+  return { groups: groups.filter((g) => g.els.some((e) => !isEmpty(e))), used: use }
 }
 
-function buildPage(els, readTitle, readDate) {
-  els = [...els]
-  while (els.length && isEmpty(els[0])) els.shift()
+function buildPage(group, readTitle, readDate) {
+  const els = [...group.els]
+  const trim = () => {
+    while (els.length && isEmpty(els[0])) els.shift()
+    while (els.length && isEmpty(els[els.length - 1])) els.pop()
+  }
+  trim()
   let title = ''
   let dateMs = null
-  if (readTitle && els.length && text(els[0]).length <= 150 && !els[0].querySelector('img,table')) {
+  if (readTitle && group.titled && els.length && !isDateLine(text(els[0])) && text(els[0]).length <= 150 && !els[0].querySelector('img,table')) {
     title = text(els.shift())
   }
-  if (readDate) {
-    const a = els[0] && text(els[0])
-    if (a && isDateLine(a)) {
-      const b = els[1] && text(els[1])
-      const hasTime = b && isTimeLine(b)
-      dateMs = parseStamp(a, hasTime ? b : '')
-      if (dateMs !== null) els.splice(0, hasTime ? 2 : 1)
-    }
+  trim()
+  if (readDate && els.length && isDateLine(text(els[0]))) {
+    let k = 1
+    while (k < els.length && k <= 3 && isEmpty(els[k])) k++
+    const hasTime = els[k] && isTimeLine(text(els[k]))
+    dateMs = parseStamp(text(els[0]), hasTime ? text(els[k]) : '')
+    if (dateMs !== null) els.splice(0, hasTime ? k + 1 : 1)
   }
+  trim()
   const wrap = document.createElement('div')
   els.forEach((e) => wrap.appendChild(e.cloneNode(true)))
   return { title, dateMs, html: wrap.innerHTML }
@@ -204,7 +245,7 @@ export default function ImportModal({ uid, sections, onClose }) {
     }
   }
 
-  const label = { auto: 'Auto (recommended)', signature: 'Title + date line', breaks: 'Page break', headings: 'Headings', file: 'One page per file' }
+  const label = { auto: 'Auto (recommended)', signature: 'Date + time line (OneNote style)', breaks: 'Page break', headings: 'Headings', file: 'One page per file' }
 
   return (
     <div className="fixed inset-0 z-[70] flex items-end justify-center md:items-center" onClick={step === 'importing' ? undefined : onClose}>
@@ -257,11 +298,11 @@ export default function ImportModal({ uid, sections, onClose }) {
                 </label>
                 <label className="flex items-center gap-2">
                   <input type="checkbox" checked={readTitle} onChange={(e) => setReadTitle(e.target.checked)} />
-                  Prothom line ta page er title
+                  Date er upore title thakle sheta page er title (na thakle blank)
                 </label>
                 <label className="flex items-center gap-2">
                   <input type="checkbox" checked={readDate} onChange={(e) => setReadDate(e.target.checked)} />
-                  Title er porer date/time ta page er tarikh hishebe nao
+                  Date + time ta page er tarikh hishebe set koro
                 </label>
               </div>
 
@@ -271,11 +312,12 @@ export default function ImportModal({ uid, sections, onClose }) {
                     <p className="font-semibold">
                       {f.name} <span className="font-normal text-muted">· {f.pages.length} pages</span>
                     </p>
+                    {f.used && <p className="text-xs text-muted">Bhag korar niyom: {label[f.used]}</p>}
                     {f.error && <p className="text-red-500">{f.error}</p>}
                     <ul className="mt-1 space-y-0.5 text-muted">
                       {f.pages.slice(0, 4).map((p, j) => (
                         <li key={j} className="truncate">
-                          {p.title || '(no title)'}
+                          {p.title || '(title nai)'}
                           {p.dateMs ? ` · ${new Date(p.dateMs).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}` : ''}
                         </li>
                       ))}
