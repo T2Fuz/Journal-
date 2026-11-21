@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { EditorContent, useEditor } from '@tiptap/react'
-import { buildExtensions, toHtml } from '../editorSetup.js'
+import { buildExtensions, insertBlockAtEnd, toHtml } from '../editorSetup.js'
+import { uploadToCloudinary } from '../cloudinary.js'
 import { PAGE_COLORS } from '../editorOptions.js'
 import { stripHtml } from '../titleUtils.js'
 import { IconArrowDown, IconArrowUp, IconPalette, IconTrash } from './Icons.jsx'
@@ -57,18 +58,53 @@ export function BlockCard({
   onAutoFocused,
 }) {
   const cb = useRef({})
-  cb.current = { onChange, onFocus, onBlur }
+  cb.current = { onChange, onFocus, onBlur, addImages }
   const cardRef = useRef(null)
   const [palette, setPalette] = useState(false)
+  const [note, setNote] = useState('')
+  const edRef = useRef(null)
+
+  async function addImages(files) {
+    setNote(files.length > 1 ? 'Uploading images...' : 'Uploading image...')
+    try {
+      for (const f of files) {
+        const url = await uploadToCloudinary(f, 'image')
+        if (edRef.current) insertBlockAtEnd(edRef.current, { type: 'image', attrs: { src: url } })
+      }
+      setNote('')
+    } catch (e) {
+      setNote(e.message)
+    }
+  }
+  const imagesIn = (list) => [...(list || [])].filter((f) => f.type?.startsWith('image/'))
 
   const editor = useEditor({
     extensions: buildExtensions(),
     content: toHtml(block.html),
-    editorProps: { attributes: { class: 'journal-editor' } },
+    editorProps: {
+      attributes: { class: 'journal-editor' },
+      // Ctrl+V / long-press Paste of a copied picture, or dragging a picture in
+      handlePaste: (_view, event) => {
+        const imgs = imagesIn(event.clipboardData?.files)
+        if (!imgs.length) return false
+        event.preventDefault()
+        cb.current.addImages(imgs)
+        return true
+      },
+      handleDrop: (_view, event) => {
+        const imgs = imagesIn(event.dataTransfer?.files)
+        if (!imgs.length) return false
+        event.preventDefault()
+        cb.current.addImages(imgs)
+        return true
+      },
+    },
     onUpdate: ({ editor }) => cb.current.onChange(block.id, editor.getHTML()),
     onFocus: ({ editor }) => cb.current.onFocus(block.id, editor),
     onBlur: () => cb.current.onBlur(block.id),
   })
+
+  edRef.current = editor
 
   useEffect(() => {
     if (!editor) return
@@ -112,6 +148,7 @@ export function BlockCard({
       <div className={ruleClass} style={ruleVars}>
         <EditorContent editor={editor} />
       </div>
+      {note && <p className="mt-1 text-xs text-muted">{note}</p>}
 
       {active && (
         <div className="mt-1 -mx-2 flex flex-wrap items-center gap-0.5">

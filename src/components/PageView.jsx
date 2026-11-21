@@ -6,6 +6,39 @@ import { BlockCard, deriveBlocks, isBlockEmpty, newBlockId } from './Blocks.jsx'
 import { BottomSheet } from './MobileUI.jsx'
 import { IconBack, IconMore, IconPlus, IconTrash } from './Icons.jsx'
 import { useVisualViewport } from '../useMobile.js'
+import { Timestamp } from 'firebase/firestore'
+
+const pad = (n) => String(n).padStart(2, '0')
+const toLocalInput = (ms) => {
+  const d = new Date(ms)
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+// The date/time under the title. Tap it to change the date and time of the page.
+function DateStamp({ label, ms, onChange, className }) {
+  const [editing, setEditing] = useState(false)
+  if (editing) {
+    return (
+      <input
+        autoFocus
+        type="datetime-local"
+        defaultValue={toLocalInput(ms)}
+        onChange={(e) => {
+          const t = new Date(e.target.value).getTime()
+          if (!Number.isNaN(t)) onChange(t)
+        }}
+        onBlur={() => setEditing(false)}
+        onKeyDown={(e) => e.key === 'Enter' && setEditing(false)}
+        className="mb-3 mt-1 rounded-lg border border-line bg-cream px-2 py-1 text-sm text-ink outline-none focus:border-pink-700"
+      />
+    )
+  }
+  return (
+    <button onClick={() => setEditing(true)} className={className} title="Date/time change korun">
+      {label} <span className="opacity-60">✎</span>
+    </button>
+  )
+}
 
 // App.jsx gives this component key={page.id}, so switching pages builds a fresh
 // PageView (fresh typing state) each time.
@@ -203,7 +236,12 @@ export default function PageView({ page, dateLabel, onSave, onDelete, mobile, on
               placeholder="Title"
               className="font-display w-full bg-transparent text-3xl font-bold outline-none"
             />
-            <p className="mb-3 mt-1 text-xs text-muted">{dateLabel}</p>
+            <DateStamp
+            label={dateLabel}
+            ms={page.createdMs}
+            onChange={(t) => onSave(page.id, { createdAt: Timestamp.fromMillis(t) })}
+            className="mb-3 mt-1 block text-left text-xs text-muted"
+          />
             {list}
           </div>
           <button
@@ -290,7 +328,12 @@ export default function PageView({ page, dateLabel, onSave, onDelete, mobile, on
         placeholder="Title"
         className="mb-1 w-full bg-transparent text-3xl font-bold outline-none"
       />
-      <p className="mb-4 text-xs text-muted">{dateLabel}</p>
+      <DateStamp
+        label={dateLabel}
+        ms={page.createdMs}
+        onChange={(t) => onSave(page.id, { createdAt: Timestamp.fromMillis(t) })}
+        className="mb-4 block text-left text-xs text-muted"
+      />
 
       {toolbarEditor && (
         <EditorToolbar
