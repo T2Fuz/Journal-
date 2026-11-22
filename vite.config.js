@@ -29,6 +29,7 @@ export default defineConfig({
         // Save the whole app on the phone so it opens with zero internet.
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024, // the editor bundle is big
+        navigateFallbackDenylist: [/^\/api\//],
         skipWaiting: true,
         clientsClaim: true,
         runtimeCaching: [

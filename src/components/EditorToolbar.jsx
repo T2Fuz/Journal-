@@ -11,6 +11,7 @@ import { uploadToCloudinary } from '../cloudinary.js'
 import { insertBlockAtEnd } from '../editorSetup.js'
 import AudioRecorder from './AudioRecorder.jsx'
 import DrawModal from './DrawModal.jsx'
+import { DICTATION_LANGS, useDictation } from '../useDictation.js'
 
 const norm = (s) => (s || '').replace(/['"]/g, '')
 
@@ -84,6 +85,7 @@ export default function EditorToolbar({ editor, page, onPageSettings }) {
   const [notice, setNotice] = useState('')
   const [recording, setRecording] = useState(false)
   const [drawing, setDrawing] = useState(false)
+  const dict = useDictation(editor)
   const imageRef = useRef(null)
   const audioRef = useRef(null)
 
@@ -119,6 +121,27 @@ export default function EditorToolbar({ editor, page, onPageSettings }) {
       <div className="flex flex-wrap items-center gap-0.5 rounded-lg border border-line bg-surface px-1.5 py-1">
         <Btn title="Undo" onClick={() => chain().undo().run()}>↶</Btn>
         <Btn title="Redo" onClick={() => chain().redo().run()}>↷</Btn>
+        <Sep />
+
+        <Btn
+          title={dict.supported ? (dict.listening ? 'Stop dictation' : 'Dictate (speak to type)') : 'Ei browser e dictation chole na'}
+          active={dict.listening}
+          onClick={() => dict.supported && dict.toggle()}
+        >
+          <span className={dict.listening ? 'animate-pulse text-red-500' : ''}>🎙</span>
+        </Btn>
+        <select
+          title="Dictation language"
+          className={selectCls}
+          value={dict.lang}
+          onChange={(e) => dict.setLang(e.target.value)}
+        >
+          {DICTATION_LANGS.map((l) => (
+            <option key={l.code} value={l.code}>
+              {l.label}
+            </option>
+          ))}
+        </select>
         <Sep />
 
         <select
@@ -369,6 +392,12 @@ export default function EditorToolbar({ editor, page, onPageSettings }) {
       </div>
 
       {notice && <p className="text-xs text-red-600 mt-1.5">{notice}</p>}
+      {dict.error && <p className="text-xs text-red-600 mt-1.5">{dict.error}</p>}
+      {dict.busy && (
+        <p className="mt-1.5 text-xs text-muted">
+          <span className="text-red-500">● {dict.isAI ? 'AI dictation' : 'Listening...'}</span> {dict.interim}
+        </p>
+      )}
 
       <input ref={imageRef} type="file" accept="image/*" className="hidden" onChange={(e) => pickFile(e, 'image')} />
       <input ref={audioRef} type="file" accept="audio/*" className="hidden" onChange={(e) => pickFile(e, 'video')} />

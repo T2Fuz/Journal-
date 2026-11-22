@@ -11,6 +11,7 @@ import { uploadToCloudinary } from '../cloudinary.js'
 import { insertBlockAtEnd } from '../editorSetup.js'
 import AudioRecorder from './AudioRecorder.jsx'
 import DrawModal from './DrawModal.jsx'
+import { DICTATION_LANGS, useDictation } from '../useDictation.js'
 import {
   IconBullet,
   IconCheck,
@@ -98,6 +99,7 @@ export default function MobileToolbar({ editor, page, onPageSettings, onDeletePa
   const [notice, setNotice] = useState('')
   const [recording, setRecording] = useState(false)
   const [drawing, setDrawing] = useState(false)
+  const dict = useDictation(editor)
   const imageRef = useRef(null)
   const audioRef = useRef(null)
 
@@ -178,6 +180,39 @@ export default function MobileToolbar({ editor, page, onPageSettings, onDeletePa
                   </Chip>
                 ))}
               </Row>
+            </>
+          )}
+
+          {tray === 'dictate' && (
+            <>
+              <Row title="Language">
+                {DICTATION_LANGS.map((l) => (
+                  <Chip key={l.code} active={dict.lang === l.code} onClick={() => dict.setLang(l.code)}>
+                    {l.label}
+                  </Chip>
+                ))}
+              </Row>
+              {dict.supported ? (
+                <button
+                  type="button"
+                  onMouseDown={keepFocus}
+                  onClick={dict.toggle}
+                  className={`mt-1 flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-base font-semibold text-white ${
+                    dict.listening ? 'bg-red-600' : 'bg-pink-800'
+                  }`}
+                >
+                  <IconMic size={20} />
+                  {dict.listening ? 'Stop' : 'Start speaking'}
+                </button>
+              ) : (
+                <p className="text-sm text-muted">Ei browser e dictation chole na. Keyboard er mic button use korun.</p>
+              )}
+              {dict.busy && (
+                <p className="mt-2 text-sm text-muted">
+                  <span className="text-red-500">● {dict.isAI ? 'AI dictation' : 'Listening...'}</span> {dict.interim}
+                </p>
+              )}
+              {dict.error && <p className="mt-2 text-sm text-red-500">{dict.error}</p>}
             </>
           )}
 
@@ -278,6 +313,11 @@ export default function MobileToolbar({ editor, page, onPageSettings, onDeletePa
           </Tb>
           <Tb label="Redo" onClick={() => chain().redo().run()}>
             <IconRedo />
+          </Tb>
+          <Tb label="Dictate" active={tray === 'dictate' || dict.listening} onClick={() => toggleTray('dictate')}>
+            <span className={dict.listening ? 'animate-pulse text-red-500' : ''}>
+              <IconMic />
+            </span>
           </Tb>
           <Sep />
           <Tb label="Font and size" wide active={tray === 'font'} onClick={() => toggleTray('font')}>
